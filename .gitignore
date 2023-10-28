@@ -1,0 +1,26 @@
+# .gitignore contents for Flutter and React app
+# See https://www.gitignore.io/api/flutter,react for more configurations
+
+# Flutter
+**/build/
+**/ios/Flutter/
+**/ios/Pods/
+**/ios/Runner/GeneratedPluginRegistrant.m
+**/ios/Runner/GeneratedPluginRegistrant.h
+**/macos/Flutter/
+**/web/assets/
+**/web/favicon.png
+**/web/index.html
+
+# React
+node_modules/
+build/
+.DS_Store
+*.log
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.cachedData
+yarn-error.log

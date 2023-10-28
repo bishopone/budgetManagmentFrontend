@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "536356517730",
+    "project_id": "financebudgettransfer",
+    "storage_bucket": "financebudgettransfer.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:536356517730:android:1e3203a268ca02c2685e3b",
+        "android_client_info": {
+          "package_name": "com.example.budgetmanager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAO9KdCwwyXpYPD5jojbpTeJqxeA0JHghI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
