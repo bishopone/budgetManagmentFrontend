@@ -43,6 +43,7 @@ import Users from "layouts/users";
 import Requests from "layouts/requests";
 import App from "layouts/ordering";
 import Permission from "layouts/permissions";
+import Departments from "layouts/departments";
 import Search from "layouts/search";
 import Notifications from "layouts/notifications";
 import Profile from "layouts/profile";
@@ -115,7 +116,7 @@ const routes = [
     type: "collapse",
     name: "Authority Managment",
     key: "authority",
-    icon: <Icon fontSize="small">group</Icon>,
+    icon: <Icon fontSize="small">list_alt</Icon>,
     route: "/authority",
     component: <App />,
   },
@@ -127,54 +128,14 @@ const routes = [
     route: "/permissions",
     component: <Permission />,
   },
-  // {
-  //   type: "collapse",
-  //   name: "Analytics",
-  //   key: "analytics",
-  //   icon: <Icon fontSize="small">auto_graph</Icon>,
-  //   route: "/analytics",
-  //   component: <Analytics />,
-  // },
-  // {
-  //   type: "collapse",
-  //   name: "Documents",
-  //   key: "documents",
-  //   icon: <Icon fontSize="small">receipt_long</Icon>,
-  //   route: "/documents",
-  //   component: <Documents />,
-  // },
-  // {
-  //   type: "internal",
-  //   name: "Documents",
-  //   key: "documents",
-  //   icon: <Icon fontSize="small">receipt_long</Icon>,
-  //   route: "/documents/search",
-  //   component: <Search />,
-  // },
-  // {
-  //   type: "internal",
-  //   name: "Details",
-  //   key: "details",
-  //   icon: <Icon fontSize="small">details</Icon>,
-  //   route: "/documents/search/:id",
-  //   component: <Details />,
-  // },
-  // {
-  //   type: "internal",
-  //   name: "Details",
-  //   key: "details",
-  //   icon: <Icon fontSize="small">share</Icon>,
-  //   route: "/share/:id/:password",
-  //   component: <Share />,
-  // },
-  // {
-  //   type: "collapse",
-  //   name: "Notifications",
-  //   key: "notifications",
-  //   icon: <Icon fontSize="small">notifications</Icon>,
-  //   route: "/notifications",
-  //   component: <Notifications />,
-  // },
+  {
+    type: "collapse",
+    name: "Departments Managment",
+    key: "departments",
+    icon: <Icon fontSize="small">grading</Icon>,
+    route: "/departments",
+    component: <Departments />,
+  },
   {
     type: "collapse",
     name: "Profile",

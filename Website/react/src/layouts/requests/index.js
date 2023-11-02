@@ -28,19 +28,28 @@ import Footer from "examples/Footer";
 import DataTable from "examples/Tables/DataTable";
 import UserForm from "./components/userform";
 import IconButton from "@mui/material/IconButton";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import Select from "@mui/material/Select";
 
 import { useNavigate } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import api from "../../api";
 import MDTypography from "components/MDTypography";
 import MDSnackbar from "components/MDSnackbar";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
 
 import MDButton from "components/MDButton";
 import { Modal, Backdrop, Fade, Box } from "@mui/material";
+import MaxWidthDialog from "./components/dialog/dialog";
 const style = {
   position: "absolute",
   top: "50%",
   left: "50%",
+  width: "500px",
+  height: "500px",
   transform: "translate(-50%, -50%)",
   bgcolor: "background.paper",
   border: "2px solid #000",
@@ -59,10 +68,10 @@ function Requests() {
   const uiRef = useRef(null);
 
   const [menu, setMenu] = useState("All");
-
+  const [selectedRequest, setSelectedRequest] = useState("");
   const [users, setUsers] = useState([]);
   const [open, setOpen] = useState(false);
-  const [image, setImage] = useState("false");
+  const [fillter, setFillter] = useState(0);
   const [selectedUser, setSelectedUser] = useState({});
   const [errorSB, setErrorSB] = useState(false);
   const [message, setMessage] = useState("");
@@ -73,58 +82,61 @@ function Requests() {
   const closeSuccessSB = () => setSuccessSB(false);
 
   useEffect(() => {
-    async function fetchData() {
-      const token = localStorage.getItem("token");
-      await api
-        .get("/budget/", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        .then((response) => {
-          const userlist = [];
-          const budgetTypes = [
-            "Normal Budget",
-            "Capital Budget",
-            "Emergency Budget",
-            "Internal Budget",
-          ];
-          response.data.forEach((x) => {
-            const transformedUser = {
-              ...x,
-              option: (
-                <>
-                  <IconButton color="primary" onClick={() => onView(x)}>
-                    <Icon>visibility</Icon>
-                  </IconButton>
-                  <IconButton
-                    color="success"
-                    onClick={() => onConfirm(x.RequestID, x.Type, x.NewState)}
-                  >
+    fetchData();
+  }, [fillter]);
+
+  async function fetchData() {
+    const token = localStorage.getItem("token");
+    const url = `/budget/${fillter === 0 ? "active" : ""}`;
+    console.log(url);
+    await api
+      .get(url, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((response) => {
+        const userlist = [];
+        const budgetTypes = [
+          "Normal Budget",
+          "Capital Budget",
+          "Emergency Budget",
+          "Internal Budget",
+        ];
+        response.data.forEach((x) => {
+          const transformedUser = {
+            ...x,
+            option: (
+              <>
+                <IconButton color="warning" onClick={() => onView(x)}>
+                  <Icon>visibility</Icon>
+                </IconButton>
+                {fillter === 0 ? (
+                  <IconButton color="success" onClick={() => onNextStep(x.Type, x.RequestID)}>
                     <Icon>thumb_up</Icon>
                   </IconButton>
+                ) : null}
+                {fillter === 0 ? (
                   <IconButton color="primary" onClick={() => onView(x)}>
                     <Icon>thumb_down</Icon>
                   </IconButton>
-                </>
-              ),
-              typeName: budgetTypes[x.Type - 1],
-            };
+                ) : null}
+              </>
+            ),
+            typeName: budgetTypes[x.Type - 1],
+          };
 
-            // Push the transformed object to the userlist array
-            userlist.push(transformedUser);
-          });
-          console.log(userlist);
-          setUsers(userlist);
-        })
-        .catch((error) => {
-          console.error("Error fetching users:", error);
+          // Push the transformed object to the userlist array
+          userlist.push(transformedUser);
         });
-    }
-    fetchData();
-  }, []);
-
+        console.log(userlist);
+        setUsers(userlist);
+      })
+      .catch((error) => {
+        console.error("Error fetching users:", error);
+      });
+  }
   const onView = async (value) => {
     console.log(value);
     try {
@@ -223,47 +235,28 @@ function Requests() {
     }
   };
 
-  const onConfirm = async (RequestID, Type, Previousemessage) => {
+  const onNextStep = async (type, requestId) => {
     const token = localStorage.getItem("token");
-    console.log(token);
     await api
-      .post(
-        `/budget/pass/`,
-        {
-          RequestID: RequestID,
-          Type: Type,
-          PrevMessage: Previousemessage,
+      .get(`/budget/nextauth/${type}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
+      })
       .then((response) => {
-        setMessage(response.data.message);
-        setUsers((prev) => {
-          const filteredUsers = prev.filter((user) => {
-            console.log(user["UserID"]);
-            console.log(response.data.userId);
-            console.log(parseInt(user["UserID"]) !== parseInt(response.data.userId));
-            return parseInt(user["UserID"]) !== parseInt(response.data.userId);
-          });
-          console.log(filteredUsers);
-          return filteredUsers;
-        });
-        openSuccessSB(true);
+        console.log(response);
+        setAdminUsers(response.data);
+        setSelectedRequest(requestId);
+        handleAdminChoice(true);
       })
       .catch((error) => {
         console.error("Error deleting user:", error);
-        setMessage(error.response.data.error);
-        openErrorSB(true);
       });
   };
-  const handleImage = (value) => {
-    setImage(value);
-    setOpen(true);
+
+  const handleAdminChoice = (value) => {
+    setOpen(value);
   };
 
   const handleClose = () => {
@@ -342,13 +335,35 @@ function Requests() {
       bgWhite
     />
   );
+  const [adminUsers, setAdminUsers] = useState([]);
+  const handleChange = (event, newValue) => {
+    console.log(newValue);
+    setFillter(newValue);
+  };
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
       {menu === "All" ? (
         <>
-          <MDBox pt={2} px={2} display="flex" justifyContent="space-between" alignItems="center">
-            <MDTypography variant="h6" fontWeight="medium"></MDTypography>
+          <MDBox
+            sx={{ width: 500 }}
+            pt={2}
+            px={2}
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Tabs
+              sx={{ width: "100%" }}
+              value={fillter}
+              centered
+              onChange={handleChange}
+              aria-label="disabled tabs example"
+            >
+              <Tab label="Assigned To Me" />
+              <Tab label="All Asigned" />
+            </Tabs>
           </MDBox>
           <MDBox pt={2} px={2}></MDBox>
           <MDBox mt={2}>
@@ -357,8 +372,6 @@ function Requests() {
                 columns: [
                   { Header: "RequestID", accessor: "RequestID", width: "25%" },
                   { Header: "Budget Type", accessor: "typeName", width: "25%" },
-                  { Header: "FromBudgetCode", accessor: "FromBudgetCode", width: "20%" },
-                  { Header: "ToBudgetCode", accessor: "ToBudgetCode", width: "20%" },
                   { Header: "FromDep", accessor: "FromDep", width: "20%" },
                   { Header: "ToDep", accessor: "ToDep", width: "20%" },
                   { Header: "Date", accessor: "ChangeDate", width: "20%" },
@@ -377,23 +390,13 @@ function Requests() {
         </MDBox>
       )}
       <MDBox pt={2} px={2}></MDBox>
-      <Modal
-        open={open}
-        onClose={handleClose}
-        closeAfterTransition
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-        BackdropComponent={Backdrop}
-        BackdropProps={{
-          timeout: 500,
-        }}
-      >
-        <Box sx={style}>
-          <Fade sx={style} in={open} timeout={500}>
-            <img src={image} alt="asd" style={{ maxHeight: "90%", maxWidth: "90%" }} />
-          </Fade>
-        </Box>
-      </Modal>
+      <MaxWidthDialog
+        isopen={open}
+        handleClose={handleClose}
+        adminUsers={adminUsers}
+        selectedRequest={selectedRequest}
+        fetchData={fetchData}
+      />
       {renderErrorSB}
       {renderSuccessSB}
       <div ref={uiRef} />
