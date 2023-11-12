@@ -1,5 +1,5 @@
 class BudgetHierarchy {
-  final int id;
+  final String id;
   final String name;
   final List<BudgetHierarchy>? children;
 

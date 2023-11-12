@@ -37,16 +37,21 @@ export default function MaxWidthDialog({ isopen, handleClose, selectedDepartment
     const token = localStorage.getItem("token");
     var finalId = id;
     // console.log(selectedRequest);
-    if (!isFullyDivisibleBy100(parseInt(selectedDepartment.ID))) {
+    if (selectedDepartment?.ID && !isFullyDivisibleBy100(parseInt(selectedDepartment.ID))) {
       finalId = `${selectedDepartment.ID}${id}`;
     }
+    console.log({
+      ID: finalId,
+      Name: title,
+      ParentID: selectedDepartment?.ID ? selectedDepartment.ID : null,
+    });
     await api
       .post(
         `/department/`,
         {
           ID: finalId,
           Name: title,
-          ParentID: selectedDepartment.ID ?? null,
+          ParentID: selectedDepartment?.ID ? selectedDepartment.ID : null,
         },
         {
           headers: {
@@ -79,7 +84,7 @@ export default function MaxWidthDialog({ isopen, handleClose, selectedDepartment
             }}
           >
             <TextField
-              value={`${selectedDepartment.ID}/`}
+              value={selectedDepartment?.ID ? `${selectedDepartment?.ID}/` : ""}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">

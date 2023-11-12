@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:budgetmanager/helpers/theme/app_theme.dart';
 import 'package:budgetmanager/helpers/widgets/my_container.dart';
@@ -10,10 +11,19 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../config.dart';
 import '../models/budget_request.dart';
 import '../models/log_request.dart';
+
+final List<Color> budgetTypeColors = [
+  Colors.green,
+  Colors.blueAccent,
+  Colors.orangeAccent,
+  Colors.brown,
+];
 
 class HealthScheduleScreen extends StatefulWidget {
   final Function changeindex;
@@ -62,6 +72,43 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
     } else {
       throw Exception('Failed to load data from the API');
     }
+  }
+
+  Future<void> onView(String requestId) async {
+    final appConfig = AppConfigProvider.of(context)?.appConfig;
+    print(requestId);
+    final url = Uri.parse(
+        "${appConfig?.apiBaseUrl}/pdf/generate-pdf/$requestId"); // Replace with your server URL
+
+    try {
+      if (!await canLaunchUrl(url)) {
+        throw Exception('Could not launch $url');
+      }
+      await launchUrl(url);
+      //
+      // final response = await http.get(url);
+      // print(response.bodyBytes);
+      // if (response.statusCode == 200) {
+      //   final Uint8List data = response.bodyBytes;
+      //
+      //   // Open the PDF using url_launcher
+      //   await launchInBrowser(data);
+      // } else {
+      //   throw Exception('Failed to load PDF');
+      // }
+    } catch (error) {
+      print('Error: $error');
+    }
+  }
+
+  Future<void> launchInBrowser(Uint8List data) async {
+    print(base64Encode(data));
+    print("base64Encode(data)");
+    final url = Uri.parse('data:application/pdf;base64,${base64Encode(data)}');
+    if (!await canLaunchUrl(url)) {
+      throw Exception('Could not launch $url');
+    }
+    await launchUrl(url);
   }
 
   @override
@@ -150,6 +197,7 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
                               int day = date.day;
                               return singleDateWidget(
                                   date: "${day}\n${month}\n${year}",
+                                  type: snapshot.data![index].type,
                                   index: snapshot.data![index].requestID);
                             }),
                       ),
@@ -160,12 +208,22 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
                     size: 40,
                   );
                 }),
-            Container(
-              margin: MySpacing.fromLTRB(24, 24, 24, 0),
-              child: MyText.titleMedium("Activity",
-                  color: theme.colorScheme.onBackground,
-                  muted: true,
-                  fontWeight: 600),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  margin: MySpacing.fromLTRB(24, 0, 0, 0),
+                  child: MyText.titleMedium("Activity",
+                      color: theme.colorScheme.onBackground,
+                      muted: true,
+                      fontWeight: 600),
+                ),
+                if (selectedDate != 0)
+                  IconButton(
+                      onPressed: () => onView(selectedDate.toString()),
+                      icon: const Icon(Icons.download))
+              ],
             ),
             if (selectedDate != 0)
               SizedBox(
@@ -187,26 +245,25 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
                       if (snapshot.connectionState == ConnectionState.done &&
                           snapshot.hasData) {
                         return Container(
-                            margin: MySpacing.fromLTRB(8,0,8,8),
-                            child: ListView.builder(
-                              physics: NeverScrollableScrollPhysics(),
-                              scrollDirection: Axis.vertical,
-                             itemCount: snapshot.data!.length,
-                              itemBuilder: (context,index){
-                                final data = snapshot.data![index];
-                                DateTime date = DateTime.parse(data.changeDate.toIso8601String());
-                                String formattedDate = formatter.format(date);
-                                print(data);
-                                return singleActivityWidget(
-                                    imgdata: data.ProfilePictureLink,
-                                    time: formattedDate,
-                                    editorname: data.changedByUserName,
-                                    editedcase: data.newState,
-                                    phonenumber: data.PhoneNumber
-                                );
-                              },
-                            ),
-                          );
+                          margin: MySpacing.fromLTRB(8, 0, 8, 8),
+                          child: ListView.builder(
+                            physics: NeverScrollableScrollPhysics(),
+                            scrollDirection: Axis.vertical,
+                            itemCount: snapshot.data!.length,
+                            itemBuilder: (context, index) {
+                              final data = snapshot.data![index];
+                              DateTime date = DateTime.parse(
+                                  data.changeDate.toIso8601String());
+                              String formattedDate = formatter.format(date);
+                              return singleActivityWidget(
+                                  imgdata: data.ProfilePictureLink,
+                                  time: formattedDate,
+                                  editorname: data.changedByUserName,
+                                  editedcase: data.newState,
+                                  phonenumber: data.PhoneNumber);
+                            },
+                          ),
+                        );
                       }
                       return const Text('error try again!!!');
                     }),
@@ -215,7 +272,8 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
         ));
   }
 
-  Widget singleDateWidget({String? date, required int index}) {
+  Widget singleDateWidget(
+      {String? date, required int index, required int type}) {
     if (selectedDate == index) {
       return InkWell(
         onTap: () {
@@ -226,7 +284,7 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
         child: MyContainer(
           height: 100,
           width: 50,
-          color: theme.colorScheme.primary,
+          color: budgetTypeColors[type - 1],
           borderRadiusAll: 4,
           padding: MySpacing.fromLTRB(0, 8, 0, 14),
           child: Column(
@@ -234,7 +292,7 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
               MyText.bodySmall(
                 date.toString(),
                 fontWeight: 600,
-                color: theme.colorScheme.onPrimary,
+                color: theme.colorScheme.onBackground,
                 height: 1.9,
                 textAlign: TextAlign.center,
               ),
@@ -243,7 +301,8 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
                 height: 8,
                 width: 8,
                 decoration: BoxDecoration(
-                    color: theme.colorScheme.onPrimary, shape: BoxShape.circle),
+                    color: theme.colorScheme.onBackground,
+                    shape: BoxShape.circle),
               )
             ],
           ),
@@ -258,6 +317,7 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
       },
       child: MyContainer(
         width: 50,
+        color: budgetTypeColors[type - 1],
         margin: const EdgeInsets.all(8),
         borderRadiusAll: 4,
         padding: MySpacing.fromLTRB(0, 8, 0, 14),
@@ -278,11 +338,10 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
 
   Widget singleActivityWidget(
       {required String time,
-        required String imgdata,
+      required String imgdata,
       required String editedcase,
       required String editorname,
-      required String phonenumber
-      }) {
+      required String phonenumber}) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
@@ -302,20 +361,22 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
               child: Row(
                 children: [
                   Container(
-                      // padding: MySpacing.all(8),
-                      decoration: const BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(4))),
-                      child: Image(
-                        image: NetworkImage(imgdata ==
-                            ""
-                            ? "https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?w=740&t=st=1696599824~exp=1696600424~hmac=b1c23d7d66b5cd491fb7031a390d1f991a24ba0a03304ff2acfda8b3c4cddf0b"
-                            : imgdata),
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                      ),
+                    // padding: MySpacing.all(8),
+                    decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.all(Radius.circular(4))),
+                    child: Image(
+                      image: NetworkImage(imgdata == ""
+                          ? "https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?w=740&t=st=1696599824~exp=1696600424~hmac=b1c23d7d66b5cd491fb7031a390d1f991a24ba0a03304ff2acfda8b3c4cddf0b"
+                          : imgdata),
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                   const SizedBox(height: 5,width: 5,),
+                  const SizedBox(
+                    height: 5,
+                    width: 5,
+                  ),
                   Expanded(
                     // margin: MySpacing.left(12),
                     child: Column(

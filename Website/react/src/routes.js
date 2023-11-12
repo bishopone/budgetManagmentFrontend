@@ -40,7 +40,11 @@ import Dashboard from "layouts/dashboard";
 import Analytics from "layouts/analytics";
 import Documents from "layouts/documents";
 import Users from "layouts/users";
-import Requests from "layouts/requests";
+import NormalRequests from "layouts/request/normal request";
+import CapitalRequests from "layouts/request/capital request";
+import InternalRequests from "layouts/request/internal request";
+import TreasuryRequests from "layouts/request/treasury request";
+import TreasuryManagment from "layouts/trasury managment/index";
 import App from "layouts/ordering";
 import Permission from "layouts/permissions";
 import Departments from "layouts/departments";
@@ -70,7 +74,7 @@ const routes = [
     key: "normal",
     icon: <Icon fontSize="small">paid</Icon>,
     route: "/normal",
-    component: <Requests />,
+    component: <NormalRequests budgettype="1" />,
   },
   {
     type: "collapse",
@@ -78,15 +82,7 @@ const routes = [
     key: "capital",
     icon: <Icon fontSize="small">location_city</Icon>,
     route: "/capital",
-    component: <Requests />,
-  },
-  {
-    type: "collapse",
-    name: "Internal Budget",
-    key: "internal",
-    icon: <Icon fontSize="small">wallet</Icon>,
-    route: "/internal",
-    component: <Requests />,
+    component: <CapitalRequests budgettype="2" />,
   },
   {
     type: "collapse",
@@ -94,7 +90,23 @@ const routes = [
     key: "treasury",
     icon: <Icon fontSize="small">account_balance</Icon>,
     route: "/treasury",
-    component: <Requests />,
+    component: <TreasuryRequests budgettype="3" />,
+  },
+  {
+    type: "collapse",
+    name: "Internal Budget",
+    key: "internal",
+    icon: <Icon fontSize="small">wallet</Icon>,
+    route: "/internal",
+    component: <InternalRequests budgettype="4" />,
+  },
+  {
+    type: "collapse",
+    name: "Treasury Managment",
+    key: "trasury-managment",
+    icon: <Icon fontSize="small">account_balance_wallet</Icon>,
+    route: "/trasury-managment",
+    component: <TreasuryManagment />,
   },
   {
     type: "internal",
@@ -120,14 +132,14 @@ const routes = [
     route: "/authority",
     component: <App />,
   },
-  {
-    type: "collapse",
-    name: "Permission Managment",
-    key: "permissions",
-    icon: <Icon fontSize="small">shield</Icon>,
-    route: "/permissions",
-    component: <Permission />,
-  },
+  // {
+  //   type: "collapse",
+  //   name: "Permission Managment",
+  //   key: "permissions",
+  //   icon: <Icon fontSize="small">shield</Icon>,
+  //   route: "/permissions",
+  //   component: <Permission />,
+  // },
   {
     type: "collapse",
     name: "Departments Managment",

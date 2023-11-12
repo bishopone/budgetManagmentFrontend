@@ -7,6 +7,7 @@ import 'package:budgetmanager/screens/budget/capital_budget.dart';
 import 'package:budgetmanager/screens/budget/insider_budget.dart';
 import 'package:budgetmanager/screens/budget/normal_budget.dart';
 import 'package:budgetmanager/screens/budget/safe_budget.dart';
+import 'package:budgetmanager/screens/information/information_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -217,8 +218,9 @@ void main() async {
               '/auth': (context) => LoginScreen(),
               '/normalbudget': (context) => NormalBudget(),
               '/capitalbudget': (context) => CapitalBudget(),
-              '/safebudget': (context) => const SafeBudget(),
+              '/safebudget': (context) => SafeBudget(),
               '/insiderbudget': (context) => const InsiderBudget(),
+              '/information': (context) => InformationScreen(),
               '/no-internet-error': (context) => NoInternetScreen(),
             },
           ),

@@ -74,6 +74,9 @@ const DepartmentManager = () => {
     <DashboardLayout>
       <DashboardNavbar />
       <MDBox mt={2}></MDBox>
+      <Grid container gap={"5px"}>
+        <MDButton onClick={() => handleAdd(null)}> ADD </MDButton>
+      </Grid>
       <Grid
         display={"flex"}
         alignContent={"center"}
@@ -103,6 +106,7 @@ const DepartmentManager = () => {
 };
 
 export default DepartmentManager;
+
 function RecursiveTreeView({ items, handleAdd, handleEdit, handleDelete }) {
   return (
     <TreeView defaultCollapseIcon={<ArrowDropDownIcon />} defaultExpandIcon={<ArrowRightIcon />}>

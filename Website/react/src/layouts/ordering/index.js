@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-props-no-spreading */
 /* eslint-disable react/prop-types */
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -332,10 +333,10 @@ function DragOrder() {
       <DndProvider backend={HTML5Backend}>
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
-            <Tab label="Normal Budget" {...a11yProps(0)} />
-            <Tab label="Capital Budget" {...a11yProps(1)} />
-            <Tab label="Emergency Budget" {...a11yProps(2)} />
-            <Tab label="Internal Budget" {...a11yProps(3)} />
+            <Tab label="Normal Budget" />
+            <Tab label="Capital Budget" />
+            <Tab label="Treasury Budget" />
+            <Tab label="Internal Budget" />
           </Tabs>
         </Box>
         <CustomTabPanel value={value} index={0}>
@@ -345,7 +346,7 @@ function DragOrder() {
           <AllContainer fillter={"Capital"} tabid={2} />
         </CustomTabPanel>
         <CustomTabPanel value={value} index={2}>
-          <AllContainer fillter={"Emergency"} tabid={3} />
+          <AllContainer fillter={"Treasury"} tabid={3} />
         </CustomTabPanel>
         <CustomTabPanel value={value} index={3}>
           <AllContainer fillter={"Internal"} tabid={4} />

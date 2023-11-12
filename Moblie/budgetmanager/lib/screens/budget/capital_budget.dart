@@ -1,5 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:budgetmanager/models/capital_project.dart';
+import 'package:cunning_document_scanner/cunning_document_scanner.dart';
+import 'package:dotted_border/dotted_border.dart';
 import 'package:http_parser/http_parser.dart'; // Import the http_parser package
 
 import 'package:dropdown_search/dropdown_search.dart';
@@ -15,7 +19,7 @@ import '../../helpers/widgets/my_drop_down_option.dart';
 import '../../helpers/widgets/my_drop_down_or_input.dart';
 import '../../models/budget_code.dart';
 import '../../models/department_code.dart';
-
+import '../../helpers/widgets/my_image_attachments.dart';
 class CapitalBudget extends StatefulWidget {
   @override
   _CapitalBudgetState createState() => _CapitalBudgetState();
@@ -26,11 +30,17 @@ class _CapitalBudgetState extends State<CapitalBudget> {
   String selectedOption = "own";
   String fromDepartment = "";
   String toDepartment = "";
-  String fromCode = "";
-  String toCode = "";
-  String reason = "";
-  double amount = 0.0;
+
+  final transactions = [
+    {
+      "fromCode": "",
+      "toCode": "",
+      "reason": "",
+      "amount": 0.0,
+    }
+  ];
   Uint8List? _signatureData;
+  List<String> _pictures = [];
 
   void setFromDepartment(String department) {
     setState(() {
@@ -44,27 +54,27 @@ class _CapitalBudgetState extends State<CapitalBudget> {
     });
   }
 
-  void setFromCode(String code) {
+  void setFromCode(String code, index) {
     setState(() {
-      fromCode = code;
+      transactions[index]["fromCode"] = code;
     });
   }
 
-  void setToCode(String code) {
+  void setToCode(String code, index) {
     setState(() {
-      toCode = code;
+      transactions[index]["toCode"] = code;
     });
   }
 
-  void setReason(String newReason) {
+  void setReason(String newReason, index) {
     setState(() {
-      reason = newReason;
+      transactions[index]["reason"] = newReason;
     });
   }
 
-  void setAmount(double newAmount) {
+  void setAmount(double newAmount, index) {
     setState(() {
-      amount = newAmount;
+      transactions[index]["amount"] = newAmount;
     });
   }
 
@@ -73,110 +83,119 @@ class _CapitalBudgetState extends State<CapitalBudget> {
       selectedOption = option;
       fromDepartment = "";
       toDepartment = "";
-      fromCode = "";
-      toCode = "";
-      reason = "";
-      amount = 0.0;
     });
   }
 
-  bool validateSteps(int curent){
-    switch(curent){
+  void onPressed() async {
+    List<String> pictures;
+    try {
+      if(_pictures.length <= 5) {
+        pictures = await CunningDocumentScanner.getPictures() ?? [];
+        if (!mounted) return;
+        if(_pictures.length + pictures.length > 5) {
+          showCustomSnackbar(
+              context, 'Error', 'You can only send a maximum of 5 Images!!');
+          return;
+        }
+        setState(() {
+          _pictures.addAll(pictures);
+        });
+      }else{
+        showCustomSnackbar(context, 'Error', 'You can only send a maximum of 5 Images!!');
+      }
+    } catch (exception) {
+      print(exception);
+      // Handle exception here
+    }
+  }
+  void showCustomSnackbar(BuildContext context, String title, String message) {
+    final snackBar = SnackBar(
+      duration: Duration(seconds: 4), // Adjust the duration as needed
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text(message),
+        ],
+      ),
+      action: SnackBarAction(
+        label: 'Close',
+        onPressed: () {
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+        },
+      ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+  bool validateSteps(int curent) {
+    switch (curent) {
       case 0:
         return true;
       case 1:
-        if(selectedOption =="own"){
-          print("fromCode.isNotEmpty");
-          print(fromCode.isNotEmpty && toCode.isNotEmpty);
-          if(fromCode.isNotEmpty && toCode.isNotEmpty){
-            return true;
-          }else{
-            return false;
-          }
-
-        }else{
-          if(fromDepartment.isNotEmpty && toDepartment.isNotEmpty){
-            return true;
-          }else{
-            return false;
-          }
-
+        if (fromDepartment.isNotEmpty && toDepartment.isNotEmpty) {
+          return true;
+        } else {
+          return false;
         }
-      case 2:
-        if(selectedOption =="own"){
-          if(amount != 0.0){
-            return true;
-          }else{
-            return false;
-          }
-        }else{
-          if(fromCode.isNotEmpty && toCode.isNotEmpty){
-            return true;
-          }else{
-            return false;
-          }
-
+      default:
+        {
+          return true;
         }
-      case 3:
-        if(selectedOption =="own"){
-          if(reason.isNotEmpty){
-            return true;
-          }else{
-            return false;
-          }
-        }
-        else{
-          if(amount != 0.0 && reason.isNotEmpty){
-            return true;
-          }else{
-            return false;
-          }
-        }
-      default: {
-        return true;
-      }
-
     }
   }
-  List<BudgetHierarchy> getAllData(BudgetHierarchy data) {
+
+  List<BudgetHierarchy> getAllData(List<BudgetHierarchy> alldata) {
     List<BudgetHierarchy> dataList = [];
-
-    // Add the current data to the list
-    dataList.add(data);
-
-    if (data.children != null) {
-      for (final child in data.children!) {
-        dataList.addAll(getAllData(child));
+    // print(alldata.length);
+    for (int x = 0; x < alldata.length; x++) {
+      //print(alldata[x].children);
+      if (alldata[x].children != null) {
+        for (final data in alldata[x].children!) {
+          print(data);
+          dataList.add(data);
+          if (data.children != null) {
+            for (final child in data.children!) {
+              dataList.addAll(getAllData([child]));
+            }
+          }
+        }
       }
     }
-
+    print("dataList");
+    print(dataList.map((e) => print(e.name)));
     return dataList;
   }
 
   Widget customStepIcon(int index, int current) {
-
     if (index == current || index > current) {
       return Container(
         width: 40.0,
         height: 40.0,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white, // Circle color
         ),
         child: Center(
-          child:  Text((index+1).toString(), style: TextStyle(color: Colors.black87),),
+          child: Text(
+            (index + 1).toString(),
+            style: const TextStyle(color: Colors.black87),
+          ),
         ),
       );
     } else {
-
       return Container(
         width: 40.0,
         height: 40.0,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white, // Circle color
         ),
-        child: Center(
+        child: const Center(
           child: Icon(
             Icons.check,
             color: Colors.green, // Active and inactive colors
@@ -188,70 +207,88 @@ class _CapitalBudgetState extends State<CapitalBudget> {
 
   GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   TextEditingController input1Controller = TextEditingController();
+
   void _showSignatureDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [ Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.all(Radius.circular(50)),
-                ),
-                child: SignatureCaptureWidget(
-                  onSubmit: (Uint8List signatureData) async {
-                    Navigator.of(context).pop(); // Close the dialog
-                    setState(() {
-                      _signatureData = signatureData;
-                    });
-                    await _sendDataToServer();
-                  },
-                ),
-              ),]
-          ),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.all(Radius.circular(50)),
+              ),
+              child: SignatureCaptureWidget(
+                onSubmit: (Uint8List signatureData) async {
+                  Navigator.of(context).pop(); // Close the dialog
+                  setState(() {
+                    _signatureData = signatureData;
+                  });
+                  await _sendDataToServer();
+                },
+              ),
+            ),
+          ]),
         );
       },
     );
   }
+  String reverseFormatDateString(String formattedString) {
+    // Remove slashes from the formatted string
+    print(formattedString);
+    String stringWithoutSlashes = formattedString.replaceAll('/', '');
+    print(stringWithoutSlashes);
+
+    // Ensure the resulting string has a length of 10
+    if (stringWithoutSlashes.length != 10) {
+      return formattedString; // Return the formatted string as-is if it doesn't match the expected length
+    }
+
+    return stringWithoutSlashes;
+  }
+
   Future<void> _sendDataToServer() async {
     try {
       const secureStorage = FlutterSecureStorage();
       final token = await secureStorage.read(key: "token");
       final user = await secureStorage.read(key: "user");
-      final dep = json.decode(user!)["DepartmentID"];
 
       if (token == null) {
         Navigator.pushReplacementNamed(context, '/auth');
       }
+      var totalAmount = transactions.fold(0.0, (amount, transaction) => amount + (transaction["amount"] as double));
 
       final appConfig = AppConfigProvider.of(context)?.appConfig;
-      print('${appConfig?.apiBaseUrl}/budget/normal');
-      final url = Uri.parse('${appConfig?.apiBaseUrl}/budget/normal');
-
-      // Create a multipart request
+      print('${appConfig?.apiBaseUrl}/budget/capital');
+      final url = Uri.parse('${appConfig?.apiBaseUrl}/budget/capital');
       final request = http.MultipartRequest('POST', url);
       print(_signatureData?.length);
       // Add the signature data as a file
-      final httpImage = http.MultipartFile.fromBytes('signature', _signatureData!,
+      final httpImage = http.MultipartFile.fromBytes(
+          'signature', _signatureData!,
           contentType: MediaType('image', 'png'), filename: 'signature.png');
-      request.files.add(httpImage);
+      _pictures.forEach((image) async {
+        var addDt = DateTime.now();
+        var multipartFile = await http.MultipartFile.fromPath(
+          'attachment',
+          image,
+          contentType: MediaType('image', 'png'), filename: 'attachment_${addDt}_${image}_.png',);
+        request.files.add(multipartFile);
+      });
 
-      // Add the other data as fields
+      request.files.add(httpImage);
       request.fields.addAll({
         "RequestFor": selectedOption,
-        "BudgetTypeID": selectedOption,
+        "BudgetTypeID": "2",
         "RequestStatus": "Pending",
-        "FromDep": selectedOption == "own" ? dep.toString() : fromDepartment.split(' ')[0],
-        "ToDep": selectedOption == "own" ? dep.toString() : toDepartment.split(' ')[0],
-        "FromBudgetCode": fromCode.split(' ')[0],
-        "ToBudgetCode": toCode.split(' ')[0],
-        "Amount": amount.toString(),
-        "Reason": reason,
-        "Type": '1',
+        "From": reverseFormatDateString(fromDepartment.split(' ')[0]),
+        "To": reverseFormatDateString(toDepartment.split(' ')[0]),
+        "Transaction": jsonEncode(transactions),
+        "Type": '2',
+        "Amount": totalAmount.toString()
       });
 
       // Set headers including the authorization header
@@ -260,24 +297,26 @@ class _CapitalBudgetState extends State<CapitalBudget> {
       // Send the request
       final response = await request.send();
 
-      if (response.statusCode == 201) {
+      print(response.statusCode);
+      if (response.statusCode == 200) {
         Navigator.of(context, rootNavigator: true).pop();
         showSuccessDialog(context);
         await Future<void>.delayed(const Duration(seconds: 2));
         Navigator.pushReplacementNamed(context, "/home");
       } else {
         final errorMessage = await response.stream.bytesToString();
-        // Navigator.of(context, rootNavigator: true).pop();
-        // showErrorDialog(context, errorMessage, () => Navigator.of(context).pop());
+        Navigator.of(context, rootNavigator: true).pop();
+        showErrorDialog(context, errorMessage, () => Navigator.of(context).pop());
       }
     } catch (error) {
       print(error);
       setState(() {
-        // Navigator.of(context, rootNavigator: true).pop();
-        // showErrorDialog(context, error.toString(), () => Navigator.of(context).pop());
+        Navigator.of(context, rootNavigator: true).pop();
+        showErrorDialog(context, error.toString(), () => Navigator.of(context).pop());
       });
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -287,6 +326,11 @@ class _CapitalBudgetState extends State<CapitalBudget> {
           "ካፒታል በጀት",
           style: TextStyle(color: Colors.black),
         ),
+        actions: [
+          IconButton(onPressed: (){
+            Navigator.pushNamed(context, "/information", arguments: {"title": "capital budget"});
+          }, icon: const Icon(Icons.info))
+        ],
       ),
       body: Container(
         padding: const EdgeInsets.all(16.0),
@@ -301,7 +345,7 @@ class _CapitalBudgetState extends State<CapitalBudget> {
                   },
                   onStepTapped: (step) {
                     setState(() {
-                      if(currentStep>step) {
+                      if (currentStep > step) {
                         currentStep = step;
                       }
                     });
@@ -328,7 +372,11 @@ class _CapitalBudgetState extends State<CapitalBudget> {
                     return Row(
                       children: <Widget>[
                         ElevatedButton(
-                          onPressed:validateSteps(currentStep) ? currentStep == 3 ?()=>_showSignatureDialog(context):Detail.onStepContinue:null,
+                          onPressed: validateSteps(currentStep)
+                              ? currentStep == 3
+                              ? () => _showSignatureDialog(context)
+                              : Detail.onStepContinue
+                              : null,
                           child: Text(currentStep == 3 ? 'Confirm' : 'Next'),
                         ),
                         const SizedBox(width: 16.0),
@@ -342,7 +390,7 @@ class _CapitalBudgetState extends State<CapitalBudget> {
                   },
                   steps: [
                     Step(
-                      title:const Text(
+                      title: const Text(
                         'Step 1',
                         style: TextStyle(color: Colors.black),
                       ),
@@ -355,207 +403,217 @@ class _CapitalBudgetState extends State<CapitalBudget> {
                       title: const Text('Step 2'),
                       content: Column(
                         children: <Widget>[
-                          if (selectedOption == "own")
-                            DropDownOption(
-                              setSelectedOption: setFromCode,
-                              selectedOption: fromCode,
-                              description: "From Code",
-                              fetchFunction: (String filter) async {
-                                final appConfig =
-                                    AppConfigProvider
-                                        .of(context)
-                                        ?.appConfig;
-                                // print('${appConfig?.apiBaseUrl}/budgetcode');
-                                final url = Uri.parse(
-                                    '${appConfig?.apiBaseUrl}/budgetcode');
-                                final response = await http.get(
-                                  url,
-                                  headers: {"Content-Type": "application/json"},
-                                );
-                                var data = json.decode(response.body);
-                                var models = BudgetCode.fromJsonList(data);
-                                return models
-                                    .map((e) => "${e.id} : ${e.description}")
-                                    .toList();
-                              },
-                            ),
-                          if (selectedOption == "own")
-                            DropDownOption(
-                              setSelectedOption: setToCode,
-                              selectedOption: toCode,
-                              description: "To Code",
-                              fetchFunction: (String filter) async {
-                                final appConfig =
-                                    AppConfigProvider
-                                        .of(context)
-                                        ?.appConfig;
-                                print('${appConfig?.apiBaseUrl}/budgetcode');
-                                final url = Uri.parse(
-                                    '${appConfig?.apiBaseUrl}/budgetcode');
-                                final response = await http.get(
-                                  url,
-                                  headers: {"Content-Type": "application/json"},
-                                );
-                                var data = json.decode(response.body);
-                                var models = BudgetCode.fromJsonList(data);
-                                return models
-                                    .map((e) => "${e.id} : ${e.description}")
-                                    .toList();
-                              },
-                            ),
-                          if (selectedOption == "other")
-                            DropDownOption(
-                              setSelectedOption: setFromDepartment,
-                              selectedOption: fromDepartment,
-                              description: "From Department",
-                              fetchFunction: (String filter) async {
-                                final appConfig =
-                                    AppConfigProvider
-                                        .of(context)
-                                        ?.appConfig;
-                                print('${appConfig?.apiBaseUrl}/department');
-                                final url = Uri.parse(
-                                    '${appConfig?.apiBaseUrl}/department');
-                                final response = await http.get(
-                                  url,
-                                  headers: {"Content-Type": "application/json"},
-                                );
-                                var data = json.decode(response.body);
-                                // print(data);
-                                var models =
-                                BudgetHierarchy.fromJsonList([data]);
-                                print(getAllData(models[0]));
-                                return getAllData(models[0])
-                                    .map((e) => "${e.id}: ${e.name}")
-                                    .toList();
-                              },
-                            ),
-                          if (selectedOption == "other")
-                            DropDownOption(
-                              setSelectedOption: setToDepartment,
-                              selectedOption: toDepartment,
-                              description: "To Department",
-                              fetchFunction: (String filter) async {
-                                final appConfig =
-                                    AppConfigProvider
-                                        .of(context)
-                                        ?.appConfig;
-                                print('${appConfig?.apiBaseUrl}/department');
-                                final url = Uri.parse(
-                                    '${appConfig?.apiBaseUrl}/department');
-                                final response = await http.get(
-                                  url,
-                                  headers: {"Content-Type": "application/json"},
-                                );
-                                var data = json.decode(response.body);
-                                var models =
-                                BudgetHierarchy.fromJsonList([data]);
-                                print(getAllData(models[0]));
-                                return getAllData(models[0])
-                                    .map((e) => "${e.id}: ${e.name}")
-                                    .toList();
-                                ;
-                              },
-                            ),
+                          DropDownOption(
+                            setSelectedOption: setFromDepartment,
+                            selectedOption: fromDepartment,
+                            description: "From Capital Project",
+                            fetchFunction: (String filter) async {
+                              const secureStorage = FlutterSecureStorage();
+                              final user =
+                              await secureStorage.read(key: "user");
+                              final dep = json.decode(user!)["DepartmentID"];
+
+                              final appConfig =
+                                  AppConfigProvider.of(context)?.appConfig;
+                              print('${appConfig?.apiBaseUrl}/department/capital');
+                              final url = selectedOption == "own"
+                                  ? Uri.parse(
+                                  '${appConfig?.apiBaseUrl}/department/capital/$dep')
+                                  : Uri.parse(
+                                  '${appConfig?.apiBaseUrl}/department/capital');
+                              final response = await http.get(
+                                url,
+                                headers: {"Content-Type": "application/json"},
+                              );
+                              var data = json.decode(response.body);
+                              var models = CapitalProjects.fromJsonList(data);
+                              return models
+                                  .map((e) => "${e.id} : ${e.name}")
+                                  .toList();
+                            },
+                          ),
+                          DropDownOption(
+                            setSelectedOption: setToDepartment,
+                            selectedOption: toDepartment,
+                            description: "To Capital Project",
+                            fetchFunction: (String filter) async {
+                              const secureStorage = FlutterSecureStorage();
+                              final user =
+                              await secureStorage.read(key: "user");
+                              final dep = json.decode(user!)["DepartmentID"];
+
+                              final appConfig =
+                                  AppConfigProvider.of(context)?.appConfig;
+                              print('${appConfig?.apiBaseUrl}/department/capital/$dep');
+                              final url = selectedOption == "own"
+                                  ? Uri.parse(
+                                  '${appConfig?.apiBaseUrl}/department/capital/$dep')
+                                  : Uri.parse(
+                                  '${appConfig?.apiBaseUrl}/department/capital');
+                              final response = await http.get(
+                                url,
+                                headers: {"Content-Type": "application/json"},
+                              );
+                              var data = json.decode(response.body);
+                              print(data);
+                              var models = CapitalProjects.fromJsonList(data);
+                              print(models);
+                              return models
+                                  .map((e) => "${e.id} : ${e.name}")
+                                  .toList();
+                            },
+                          ),
                         ],
                       ),
                     ),
                     Step(
                       title: const Text('Step 3'),
-                      content: Column(
-                        children: <Widget>[
-                          if (selectedOption == "other")
-                            DropDownOption(
-                              setSelectedOption: setFromCode,
-                              selectedOption: fromCode,
-                              description: "From Code",
-                              fetchFunction: (String filter) async {
-                                final appConfig =
-                                    AppConfigProvider
-                                        .of(context)
-                                        ?.appConfig;
-                                print('${appConfig?.apiBaseUrl}/budgetcode');
-                                final url = Uri.parse(
-                                    '${appConfig?.apiBaseUrl}/budgetcode');
-                                final response = await http.get(
-                                  url,
-                                  headers: {"Content-Type": "application/json"},
-                                );
-                                var data = json.decode(response.body);
-                                var models = BudgetCode.fromJsonList(data);
-                                return models
-                                    .map((e) => "${e.id} : ${e.description}")
-                                    .toList();
-                              },
-                            ),
-                          if (selectedOption == "other")
-                            DropDownOption(
-                              setSelectedOption: setToCode,
-                              selectedOption: toCode,
-                              description: "To Code",
-                              fetchFunction: (String filter) async {
-                                final appConfig =
-                                    AppConfigProvider
-                                        .of(context)
-                                        ?.appConfig;
-                                print('${appConfig?.apiBaseUrl}/budgetcode');
-                                final url = Uri.parse(
-                                    '${appConfig?.apiBaseUrl}/budgetcode');
-                                final response = await http.get(
-                                  url,
-                                  headers: {"Content-Type": "application/json"},
-                                );
-                                var data = json.decode(response.body);
-                                var models = BudgetCode.fromJsonList(data);
-                                return models
-                                    .map((e) => "${e.id} : ${e.description}")
-                                    .toList();
-                              },
-                            ),
-                          if (selectedOption == "own")
-                            TextFormField(
-                              onChanged: (val)=>setAmount(double.parse(val)),
-
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Birr (Amount)',
-                                hintText: 'Enter the amount in Birr',
-                              ),
-
-                              validator: (value) {
-                                if (value!.isEmpty) {
-                                  return 'Please enter the amount in Birr';
-                                }
-                                // You can add additional validation here if needed.
-                                return null;
-                              },
-                            ),
-                        ],
+                      content: SizedBox(
+                        width: 300,
+                        height: 300,
+                        child: ListView.builder(
+                            itemCount: transactions.length,
+                            itemBuilder: (context, index) {
+                              return Column(
+                                children: [
+                                  DropDownOption(
+                                    setSelectedOption: (str) =>
+                                        setFromCode(str, index),
+                                    selectedOption: transactions[index]
+                                    ["fromCode"] as String,
+                                    description: "From Code",
+                                    fetchFunction: (String filter) async {
+                                      final appConfig =
+                                          AppConfigProvider.of(context)
+                                              ?.appConfig;
+                                      print(
+                                          '${appConfig?.apiBaseUrl}/budgetcode');
+                                      final url = Uri.parse(
+                                          '${appConfig?.apiBaseUrl}/budgetcode');
+                                      final response = await http.get(
+                                        url,
+                                        headers: {
+                                          "Content-Type": "application/json"
+                                        },
+                                      );
+                                      var data = json.decode(response.body);
+                                      var models =
+                                      BudgetCode.fromJsonList(data);
+                                      return models
+                                          .map((e) =>
+                                      "${e.id} : ${e.description}")
+                                          .toList();
+                                    },
+                                  ),
+                                  DropDownOption(
+                                    setSelectedOption: (str) =>
+                                        setToCode(str, index),
+                                    selectedOption:
+                                    transactions[index]["toCode"] as String,
+                                    description: "To Code",
+                                    fetchFunction: (String filter) async {
+                                      final appConfig =
+                                          AppConfigProvider.of(context)
+                                              ?.appConfig;
+                                      print(
+                                          '${appConfig?.apiBaseUrl}/budgetcode');
+                                      final url = Uri.parse(
+                                          '${appConfig?.apiBaseUrl}/budgetcode');
+                                      final response = await http.get(
+                                        url,
+                                        headers: {
+                                          "Content-Type": "application/json"
+                                        },
+                                      );
+                                      var data = json.decode(response.body);
+                                      var models =
+                                      BudgetCode.fromJsonList(data);
+                                      return models
+                                          .map((e) =>
+                                      "${e.id} : ${e.description}")
+                                          .toList();
+                                    },
+                                  ),
+                                  TextFormField(
+                                    onChanged: (val) =>
+                                        setAmount(double.parse(val), index),
+                                    keyboardType: TextInputType.number,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Birr (Amount)',
+                                      hintText: 'Enter the amount in Birr',
+                                    ),
+                                    validator: (value) {
+                                      if (value!.isEmpty) {
+                                        return 'Please enter the amount in Birr';
+                                      }
+                                      // You can add additional validation here if needed.
+                                      return null;
+                                    },
+                                  ),
+                                  DropdownOrInputField(
+                                    index: index,
+                                    setReason: setReason,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      if (index == transactions.length - 1)
+                                        ElevatedButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                transactions.add({
+                                                  "fromCode": "",
+                                                  "toCode": "",
+                                                  "reason": "",
+                                                  "amount": 0.0,
+                                                });
+                                              });
+                                            },
+                                            child: const Icon(Icons.add)),
+                                      ElevatedButton(
+                                          onPressed: () => {
+                                            setState(() {
+                                              transactions.removeAt(index);
+                                            })
+                                          },
+                                          child: const Icon(Icons.delete)),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            }),
                       ),
                     ),
                     Step(
-                      title: const Text('Step 4'),
+                      title: const Text(
+                        'Step 4',
+                        style: TextStyle(color: Colors.black),
+                      ),
                       content: Column(
-                        children: <Widget>[
-                          if (selectedOption == "other")
-                            TextFormField(
-                              onChanged: (val)=>setAmount(double.parse(val)),
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Birr (Amount)',
-                                hintText: 'Enter the amount in Birr',
-                              ),
-                              validator: (value) {
-                                if (value!.isEmpty) {
-                                  return 'Please enter the amount in Birr';
-                                }
-                                // You can add additional validation here if needed.
-                                return null;
-                              },
+                        children: [
+                          InkWell(
+                            onTap: onPressed,
+                            child: DottedBorder(
+                              color: Colors.black,
+                              strokeWidth: 2,
+                              dashPattern: const [
+                                5,
+                                5,
+                              ],
+                              child: Container(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: const Icon(Icons.image)),
                             ),
-                          DropdownOrInputField(setReason: setReason,),
+                          ),
                           const SizedBox(
-                            height: 50,
+                            height: 10,
+                          ),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: ImageWidget(
+                              pictures: _pictures,
+                            ),
                           )
                         ],
                       ),
@@ -570,6 +628,3 @@ class _CapitalBudgetState extends State<CapitalBudget> {
     );
   }
 }
-
-
-

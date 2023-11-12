@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:cunning_document_scanner/cunning_document_scanner.dart';
+import 'package:dotted_border/dotted_border.dart';
 import 'package:http_parser/http_parser.dart'; // Import the http_parser package
 
 import 'package:dropdown_search/dropdown_search.dart';
@@ -15,6 +18,7 @@ import '../../helpers/widgets/my_drop_down_option.dart';
 import '../../helpers/widgets/my_drop_down_or_input.dart';
 import '../../models/budget_code.dart';
 import '../../models/department_code.dart';
+import '../../helpers/widgets/my_image_attachments.dart';
 
 class NormalBudget extends StatefulWidget {
   @override
@@ -26,11 +30,21 @@ class _NormalBudgetState extends State<NormalBudget> {
   String selectedOption = "own";
   String fromDepartment = "";
   String toDepartment = "";
-  String fromCode = "";
-  String toCode = "";
-  String reason = "";
-  double amount = 0.0;
+
+  // String fromCode = "";
+  // String toCode = "";
+  // String reason = "";
+  // double amount = 0.0;
+  final transactions = [
+    {
+      "fromCode": "",
+      "toCode": "",
+      "reason": "",
+      "amount": 0.0,
+    }
+  ];
   Uint8List? _signatureData;
+  List<String> _pictures = [];
 
   void setFromDepartment(String department) {
     setState(() {
@@ -44,27 +58,27 @@ class _NormalBudgetState extends State<NormalBudget> {
     });
   }
 
-  void setFromCode(String code) {
+  void setFromCode(String code, index) {
     setState(() {
-      fromCode = code;
+      transactions[index]["fromCode"] = code;
     });
   }
 
-  void setToCode(String code) {
+  void setToCode(String code, index) {
     setState(() {
-      toCode = code;
+      transactions[index]["toCode"] = code;
     });
   }
 
-  void setReason(String newReason) {
+  void setReason(String newReason, index) {
     setState(() {
-      reason = newReason;
+      transactions[index]["reason"] = newReason;
     });
   }
 
-  void setAmount(double newAmount) {
+  void setAmount(double newAmount, index) {
     setState(() {
-      amount = newAmount;
+      transactions[index]["amount"] = newAmount;
     });
   }
 
@@ -73,11 +87,58 @@ class _NormalBudgetState extends State<NormalBudget> {
       selectedOption = option;
       fromDepartment = "";
       toDepartment = "";
-      fromCode = "";
-      toCode = "";
-      reason = "";
-      amount = 0.0;
+      // fromCode = "";
+      // toCode = "";
+      // reason = "";
+      // amount = 0.0;
     });
+  }
+
+  void onPressed() async {
+    List<String> pictures;
+    try {
+      if(_pictures.length <= 5) {
+        pictures = await CunningDocumentScanner.getPictures() ?? [];
+        if (!mounted) return;
+        if(_pictures.length + pictures.length > 5) {
+          showCustomSnackbar(
+              context, 'Error', 'You can only send a maximum of 5 Images!!');
+        return;
+        }
+        setState(() {
+          _pictures.addAll(pictures);
+        });
+      }else{
+        showCustomSnackbar(context, 'Error', 'You can only send a maximum of 5 Images!!');
+      }
+    } catch (exception) {
+      print(exception);
+      // Handle exception here
+    }
+  }
+  void showCustomSnackbar(BuildContext context, String title, String message) {
+    final snackBar = SnackBar(
+      duration: Duration(seconds: 4), // Adjust the duration as needed
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text(message),
+        ],
+      ),
+      action: SnackBarAction(
+        label: 'Close',
+        onPressed: () {
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+        },
+      ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   bool validateSteps(int curent) {
@@ -85,31 +146,31 @@ class _NormalBudgetState extends State<NormalBudget> {
       case 0:
         return true;
       case 1:
-          if (fromDepartment.isNotEmpty && toDepartment.isNotEmpty) {
-            return true;
-          } else {
-            return false;
-          }
-      case 2:
-          if (fromCode.isNotEmpty && toCode.isNotEmpty) {
-            return true;
-          } else {
-            return false;
-          }
-      case 3:
-        if (selectedOption == "own") {
-          if (reason.isNotEmpty) {
-            return true;
-          } else {
-            return false;
-          }
+        if (fromDepartment.isNotEmpty && toDepartment.isNotEmpty) {
+          return true;
         } else {
-          if (amount != 0.0 && reason.isNotEmpty) {
-            return true;
-          } else {
-            return false;
-          }
+          return false;
         }
+      // case 2:
+      //     if (fromCode.isNotEmpty && toCode.isNotEmpty) {
+      //       return true;
+      //     } else {
+      //       return false;
+      //     }
+      // case 3:
+      //   if (selectedOption == "own") {
+      //     if (reason.isNotEmpty) {
+      //       return true;
+      //     } else {
+      //       return false;
+      //     }
+      //   } else {
+      //     if (amount != 0.0 && reason.isNotEmpty) {
+      //       return true;
+      //     } else {
+      //       return false;
+      //     }
+      //   }
       default:
         {
           return true;
@@ -120,9 +181,9 @@ class _NormalBudgetState extends State<NormalBudget> {
   List<BudgetHierarchy> getAllData(List<BudgetHierarchy> alldata) {
     List<BudgetHierarchy> dataList = [];
     // print(alldata.length);
-    for (int x=0 ; x < alldata.length ; x++) {
+    for (int x = 0; x < alldata.length; x++) {
       //print(alldata[x].children);
-      if(alldata[x].children!= null) {
+      if (alldata[x].children != null) {
         for (final data in alldata[x].children!) {
           print(data);
           dataList.add(data);
@@ -138,6 +199,7 @@ class _NormalBudgetState extends State<NormalBudget> {
     print(dataList.map((e) => print(e.name)));
     return dataList;
   }
+
   Widget customStepIcon(int index, int current) {
     if (index == current || index > current) {
       return Container(
@@ -209,35 +271,40 @@ class _NormalBudgetState extends State<NormalBudget> {
       const secureStorage = FlutterSecureStorage();
       final token = await secureStorage.read(key: "token");
       final user = await secureStorage.read(key: "user");
-      final dep = json.decode(user!)["DepartmentID"];
 
       if (token == null) {
         Navigator.pushReplacementNamed(context, '/auth');
       }
+      var totalAmount = transactions.fold(0.0, (amount, transaction) => amount + (transaction["amount"] as double));
 
       final appConfig = AppConfigProvider.of(context)?.appConfig;
       print('${appConfig?.apiBaseUrl}/budget/normal');
       final url = Uri.parse('${appConfig?.apiBaseUrl}/budget/normal');
-
-      // Create a multipart request
       final request = http.MultipartRequest('POST', url);
       print(_signatureData?.length);
       // Add the signature data as a file
       final httpImage = http.MultipartFile.fromBytes(
           'signature', _signatureData!,
           contentType: MediaType('image', 'png'), filename: 'signature.png');
+      _pictures.forEach((image) async {
+        var addDt = DateTime.now();
+        var multipartFile = await http.MultipartFile.fromPath(
+          'attachment',
+           image,
+           contentType: MediaType('image', 'png'), filename: 'attachment_${addDt}_${image.replaceAll(".jpg", "")}.png',);
+         request.files.add(multipartFile);
+      });
+
       request.files.add(httpImage);
       request.fields.addAll({
         "RequestFor": selectedOption,
         "BudgetTypeID": "1",
         "RequestStatus": "Pending",
-        "FromDep": fromDepartment.split(' ')[0],
-        "ToDep": toDepartment.split(' ')[0],
-        "FromBudgetCode": fromCode.split(' ')[0],
-        "ToBudgetCode": toCode.split(' ')[0],
-        "Amount": amount.toString(),
-        "Reason": reason,
+        "From": fromDepartment.split(' ')[0],
+        "To": toDepartment.split(' ')[0],
+        "Transaction": jsonEncode(transactions),
         "Type": '1',
+        "Amount": totalAmount.toString()
       });
 
       // Set headers including the authorization header
@@ -246,21 +313,22 @@ class _NormalBudgetState extends State<NormalBudget> {
       // Send the request
       final response = await request.send();
 
-      if (response.statusCode == 201) {
+      print(response.statusCode);
+      if (response.statusCode == 200) {
         Navigator.of(context, rootNavigator: true).pop();
         showSuccessDialog(context);
         await Future<void>.delayed(const Duration(seconds: 2));
         Navigator.pushReplacementNamed(context, "/home");
       } else {
         final errorMessage = await response.stream.bytesToString();
-        // Navigator.of(context, rootNavigator: true).pop();
-        // showErrorDialog(context, errorMessage, () => Navigator.of(context).pop());
+        Navigator.of(context, rootNavigator: true).pop();
+        showErrorDialog(context, errorMessage, () => Navigator.of(context).pop());
       }
     } catch (error) {
       print(error);
       setState(() {
-        // Navigator.of(context, rootNavigator: true).pop();
-        // showErrorDialog(context, error.toString(), () => Navigator.of(context).pop());
+        Navigator.of(context, rootNavigator: true).pop();
+        showErrorDialog(context, error.toString(), () => Navigator.of(context).pop());
       });
     }
   }
@@ -274,6 +342,11 @@ class _NormalBudgetState extends State<NormalBudget> {
           "መደበኛ በጀት",
           style: TextStyle(color: Colors.black),
         ),
+        actions: [
+          IconButton(onPressed: (){
+            Navigator.pushNamed(context, "/information", arguments: {"title": "normal budget"});
+          }, icon: const Icon(Icons.info))
+        ],
       ),
       body: Container(
         padding: const EdgeInsets.all(16.0),
@@ -352,28 +425,29 @@ class _NormalBudgetState extends State<NormalBudget> {
                             description: "From Department",
                             fetchFunction: (String filter) async {
                               const secureStorage = FlutterSecureStorage();
-                              final user = await secureStorage.read(key: "user");
+                              final user =
+                                  await secureStorage.read(key: "user");
                               final dep = json.decode(user!)["DepartmentID"];
 
                               final appConfig =
-                                  AppConfigProvider
-                                      .of(context)
-                                      ?.appConfig;
+                                  AppConfigProvider.of(context)?.appConfig;
                               print('${appConfig?.apiBaseUrl}/department');
-                              final url = selectedOption == "own"? Uri.parse(
-                                  '${appConfig?.apiBaseUrl}/department/$dep'): Uri.parse(
-                                  '${appConfig?.apiBaseUrl}/department');
+                              final url = selectedOption == "own"
+                                  ? Uri.parse(
+                                      '${appConfig?.apiBaseUrl}/department/$dep')
+                                  : Uri.parse(
+                                      '${appConfig?.apiBaseUrl}/department');
                               final response = await http.get(
                                 url,
                                 headers: {"Content-Type": "application/json"},
                               );
+                              print(response.body);
                               var data = json.decode(response.body);
-                              var models =
-                              BudgetHierarchy.fromJsonList(data);
-                              return  selectedOption == "own" ?models.map((e) => "${e.id}: ${e.name}")
-                                  .toList() :getAllData(models)
-                                  .map((e) => "${e.id}: ${e.name}")
-                                  .toList();       },
+                              var models = BudgetHierarchy.fromJsonList(data);
+                              return getAllData(models)
+                                      .map((e) => "${e.id}: ${e.name}")
+                                      .toList();
+                            },
                           ),
                           DropDownOption(
                             setSelectedOption: setToDepartment,
@@ -381,27 +455,28 @@ class _NormalBudgetState extends State<NormalBudget> {
                             description: "To Department",
                             fetchFunction: (String filter) async {
                               const secureStorage = FlutterSecureStorage();
-                              final user = await secureStorage.read(key: "user");
+                              final user =
+                                  await secureStorage.read(key: "user");
                               final dep = json.decode(user!)["DepartmentID"];
 
                               final appConfig =
-                                  AppConfigProvider
-                                      .of(context)
-                                      ?.appConfig;
+                                  AppConfigProvider.of(context)?.appConfig;
                               print('${appConfig?.apiBaseUrl}/department/$dep');
-                              final url =  selectedOption == "own" ? Uri.parse(
-                                  '${appConfig?.apiBaseUrl}/department/$dep'): Uri.parse(
-                                  '${appConfig?.apiBaseUrl}/department');
+                              final url = selectedOption == "own"
+                                  ? Uri.parse(
+                                      '${appConfig?.apiBaseUrl}/department/$dep')
+                                  : Uri.parse(
+                                      '${appConfig?.apiBaseUrl}/department');
                               final response = await http.get(
                                 url,
                                 headers: {"Content-Type": "application/json"},
                               );
                               var data = json.decode(response.body);
                               var models = BudgetHierarchy.fromJsonList(data);
-                              return  selectedOption == "own" ?models.map((e) => "${e.id}: ${e.name}")
-                                  .toList() :getAllData(models)
-                                  .map((e) => "${e.id}: ${e.name}")
-                                  .toList();
+                              print(getAllData(models));
+                              return getAllData(models)
+                                      .map((e) => "${e.id}: ${e.name}")
+                                      .toList();
                             },
                           ),
                         ],
@@ -409,77 +484,152 @@ class _NormalBudgetState extends State<NormalBudget> {
                     ),
                     Step(
                       title: const Text('Step 3'),
-                      content: Column(
-                        children: <Widget>[
-                          DropDownOption(
-                            setSelectedOption: setFromCode,
-                            selectedOption: fromCode,
-                            description: "From Code",
-                            fetchFunction: (String filter) async {
-                              final appConfig =
-                                  AppConfigProvider.of(context)?.appConfig;
-                              print('${appConfig?.apiBaseUrl}/budgetcode');
-                              final url = Uri.parse(
-                                  '${appConfig?.apiBaseUrl}/budgetcode');
-                              final response = await http.get(
-                                url,
-                                headers: {"Content-Type": "application/json"},
+                      content: SizedBox(
+                        width: 300,
+                        height: 300,
+                        child: ListView.builder(
+                            itemCount: transactions.length,
+                            itemBuilder: (context, index) {
+                              return Column(
+                                children: [
+                                  DropDownOption(
+                                    setSelectedOption: (str) =>
+                                        setFromCode(str, index),
+                                    selectedOption: transactions[index]
+                                        ["fromCode"] as String,
+                                    description: "From Code",
+                                    fetchFunction: (String filter) async {
+                                      final appConfig =
+                                          AppConfigProvider.of(context)
+                                              ?.appConfig;
+                                      print(
+                                          '${appConfig?.apiBaseUrl}/budgetcode');
+                                      final url = Uri.parse(
+                                          '${appConfig?.apiBaseUrl}/budgetcode');
+                                      final response = await http.get(
+                                        url,
+                                        headers: {
+                                          "Content-Type": "application/json"
+                                        },
+                                      );
+                                      var data = json.decode(response.body);
+                                      var models =
+                                          BudgetCode.fromJsonList(data);
+                                      return models
+                                          .map((e) =>
+                                              "${e.id} : ${e.description}")
+                                          .toList();
+                                    },
+                                  ),
+                                  DropDownOption(
+                                    setSelectedOption: (str) =>
+                                        setToCode(str, index),
+                                    selectedOption:
+                                        transactions[index]["toCode"] as String,
+                                    description: "To Code",
+                                    fetchFunction: (String filter) async {
+                                      final appConfig =
+                                          AppConfigProvider.of(context)
+                                              ?.appConfig;
+                                      print(
+                                          '${appConfig?.apiBaseUrl}/budgetcode');
+                                      final url = Uri.parse(
+                                          '${appConfig?.apiBaseUrl}/budgetcode');
+                                      final response = await http.get(
+                                        url,
+                                        headers: {
+                                          "Content-Type": "application/json"
+                                        },
+                                      );
+                                      var data = json.decode(response.body);
+                                      var models =
+                                          BudgetCode.fromJsonList(data);
+                                      return models
+                                          .map((e) =>
+                                              "${e.id} : ${e.description}")
+                                          .toList();
+                                    },
+                                  ),
+                                  TextFormField(
+                                    onChanged: (val) =>
+                                        setAmount(double.parse(val), index),
+                                    keyboardType: TextInputType.number,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Birr (Amount)',
+                                      hintText: 'Enter the amount in Birr',
+                                    ),
+                                    validator: (value) {
+                                      if (value!.isEmpty) {
+                                        return 'Please enter the amount in Birr';
+                                      }
+                                      // You can add additional validation here if needed.
+                                      return null;
+                                    },
+                                  ),
+                                  DropdownOrInputField(
+                                    index: index,
+                                    setReason: setReason,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      if (index == transactions.length - 1)
+                                        ElevatedButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                transactions.add({
+                                                  "fromCode": "",
+                                                  "toCode": "",
+                                                  "reason": "",
+                                                  "amount": 0.0,
+                                                });
+                                              });
+                                            },
+                                            child: const Icon(Icons.add)),
+                                      ElevatedButton(
+                                          onPressed: () => {
+                                                setState(() {
+                                                  transactions.removeAt(index);
+                                                })
+                                              },
+                                          child: const Icon(Icons.delete)),
+                                    ],
+                                  ),
+                                ],
                               );
-                              var data = json.decode(response.body);
-                              var models = BudgetCode.fromJsonList(data);
-                              return models
-                                  .map((e) => "${e.id} : ${e.description}")
-                                  .toList();
-                            },
-                          ),
-                          DropDownOption(
-                            setSelectedOption: setToCode,
-                            selectedOption: toCode,
-                            description: "To Code",
-                            fetchFunction: (String filter) async {
-                              final appConfig =
-                                  AppConfigProvider.of(context)?.appConfig;
-                              print('${appConfig?.apiBaseUrl}/budgetcode');
-                              final url = Uri.parse(
-                                  '${appConfig?.apiBaseUrl}/budgetcode');
-                              final response = await http.get(
-                                url,
-                                headers: {"Content-Type": "application/json"},
-                              );
-                              var data = json.decode(response.body);
-                              var models = BudgetCode.fromJsonList(data);
-                              return models
-                                  .map((e) => "${e.id} : ${e.description}")
-                                  .toList();
-                            },
-                          ),
-                        ],
+                            }),
                       ),
                     ),
                     Step(
-                      title: const Text('Step 4'),
+                      title: const Text(
+                        'Step 4',
+                        style: TextStyle(color: Colors.black),
+                      ),
                       content: Column(
-                        children: <Widget>[
-                          TextFormField(
-                            onChanged: (val) => setAmount(double.parse(val)),
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Birr (Amount)',
-                              hintText: 'Enter the amount in Birr',
+                        children: [
+                          InkWell(
+                            onTap: onPressed,
+                            child: DottedBorder(
+                              color: Colors.black,
+                              strokeWidth: 2,
+                              dashPattern: const [
+                                5,
+                                5,
+                              ],
+                              child: Container(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: const Icon(Icons.image)),
                             ),
-                            validator: (value) {
-                              if (value!.isEmpty) {
-                                return 'Please enter the amount in Birr';
-                              }
-                              // You can add additional validation here if needed.
-                              return null;
-                            },
-                          ),
-                          DropdownOrInputField(
-                            setReason: setReason,
                           ),
                           const SizedBox(
-                            height: 50,
+                            height: 10,
+                          ),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: ImageWidget(
+                              pictures: _pictures,
+                            ),
                           )
                         ],
                       ),

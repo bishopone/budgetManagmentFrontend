@@ -255,13 +255,15 @@ function Users() {
           <MDBox mt={2}>
             <DataTable
               table={{
+                canSearch: true,
                 columns: [
                   { Header: "Picture", accessor: "ProfilePicture", width: "25%" },
                   { Header: "Name", accessor: "Username", width: "25%" },
-                  { Header: "type", accessor: "UserType", width: "20%" },
-                  { Header: "Gender", accessor: "Gender", width: "20%" },
-                  { Header: "PhoneNumber", accessor: "PhoneNumber", width: "20%" },
-                  { Header: "option", accessor: "option", width: "20%" },
+                  { Header: "type", accessor: "UserType", width: "25%" },
+                  { Header: "Department Name", accessor: "DepartmentName", width: "25%" },
+                  { Header: "Gender", accessor: "Gender", width: "25%" },
+                  { Header: "PhoneNumber", accessor: "PhoneNumber", width: "25%" },
+                  { Header: "option", accessor: "option", width: "25%" },
                 ],
                 rows: [...users],
               }}
