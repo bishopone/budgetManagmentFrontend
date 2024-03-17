@@ -53,7 +53,10 @@ import brandWhite from "assets/images/logo-ct.png";
 import brandDark from "assets/images/logo-ct-dark.png";
 import { getMessaging, getToken } from "firebase/messaging";
 import firebase from "./firebase";
+import { useTranslation } from "react-i18next";
+
 export default function App() {
+  const { t } = useTranslation();
   const [controller, dispatch] = useMaterialUIController();
   const {
     miniSidenav,
@@ -66,7 +69,6 @@ export default function App() {
     darkMode,
   } = controller;
   const [onMouseEnter, setOnMouseEnter] = useState(false);
-  const [rtlCache, setRtlCache] = useState(null);
   const { pathname } = useLocation();
 
   // Open sidenav when mouse enter on mini sidenav
@@ -92,12 +94,12 @@ export default function App() {
   useEffect(() => {
     document.body.setAttribute("dir", direction);
   }, [direction]);
+
   useEffect(() => {
     const messaging = getMessaging(firebase);
-    // Add the public key generated from the console here.
     getToken(messaging, {
       vapidKey:
-        "BHwclBkWP71AwHIRRpUUFQlUon-nLoN8kFenBcmandsk8j3J5AdxmiHWjWEc_dgfKkje90fTPRb1e4Z4jmBvLpY",
+        "BNrTS3_aekb7LmeC8kfZlA7Gi0vjL44xNSo5rbAroDIh4Fl5czUfQbhZsfhVn4kEA-5BokOcmUEop61mN19GW80",
     })
       .then(async (currentToken) => {
         if (currentToken) {
@@ -116,19 +118,14 @@ export default function App() {
                 },
               }
             )
-            .then((response) => {})
-            .catch((error) => {});
-          // Send the token to your server and update the UI if necessary
-          // ...
+            .then(() => {})
+            .catch(() => {});
         } else {
-          // Show permission request UI
           console.log("No registration token available. Request permission to generate one.");
-          // ...
         }
       })
       .catch((err) => {
         console.log("An error occurred while retrieving token. ", err);
-        // ...
       });
   }, []);
 
@@ -183,7 +180,7 @@ export default function App() {
           <Sidenav
             color={sidenavColor}
             brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
-            brandName="Publice Finance Budget"
+            brandName={t("FBM")}
             routes={routes}
             onMouseEnter={handleOnMouseEnter}
             onMouseLeave={handleOnMouseLeave}

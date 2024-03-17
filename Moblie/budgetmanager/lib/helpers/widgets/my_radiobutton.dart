@@ -4,17 +4,18 @@ class RadioWidget extends StatelessWidget {
   final String selectedOption;
   final Function(String) setSelectedOption;
 
-  RadioWidget({required this.selectedOption, required this.setSelectedOption});
+  RadioWidget({super.key, required this.selectedOption, required this.setSelectedOption});
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
         Column(
           children: [
             Container(
               width: 100.0, // Adjust the width as needed
-              child: const Text("Own", textAlign: TextAlign.center),
+              child: const Text("ከራስ የመንግስት መ/ቤት ", textAlign: TextAlign.center),
             ),
             Radio(
               value: "own",
@@ -29,7 +30,7 @@ class RadioWidget extends StatelessWidget {
           children: [
             Container(
               width: 100.0, // Adjust the width as needed
-              child: const Text("Other", textAlign: TextAlign.center),
+              child: const Text("ከ ሌላ የመንግስት መ/ቤት ", textAlign: TextAlign.center),
             ),
             Radio(
               value: "other",

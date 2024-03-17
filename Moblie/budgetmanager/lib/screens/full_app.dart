@@ -3,16 +3,23 @@
 * Version : 1.0.0
 * */
 
+import 'dart:convert';
+import 'dart:io';
 import 'package:budgetmanager/screens/activity_screen.dart';
 import 'package:budgetmanager/screens/home_screen.dart';
 import 'package:budgetmanager/screens/profile_screen.dart';
+import 'package:budgetmanager/screens/request_detail_screen.dart';
 import 'package:budgetmanager/screens/schedule_screen.dart';
 import 'package:budgetmanager/helpers/theme/app_notifier.dart';
 import 'package:budgetmanager/helpers/theme/app_theme.dart';
 import 'package:budgetmanager/helpers/utils/my_shadow.dart';
 import 'package:budgetmanager/helpers/widgets/my_card.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'analysis/analysis.dart';
+import 'gallary/temp_gallary.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -22,10 +29,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
-
+  DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+  var devicedata ;
   late CustomTheme customTheme;
   late ThemeData theme;
-
+  Future<void> deviceInfoSetter() async {
+    devicedata = await deviceInfo.deviceInfo;
+  }
   TabController? _tabController;
 
   _handleTabSelection() {
@@ -43,7 +53,8 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     customTheme = AppTheme.customTheme;
     theme = AppTheme.theme;
-    _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
+    deviceInfoSetter();
+    _tabController = TabController(length: 4, vsync: this, initialIndex: 0);
     _tabController!.addListener(_handleTabSelection);
     _tabController!.animation!.addListener(() {
       final aniValue = _tabController!.animation!.value;
@@ -94,54 +105,55 @@ class _HomeScreenState extends State<HomeScreen>
                       Container(
                         child: (_currentIndex == 0)
                             ? Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  Icon(
-                                    Icons.home,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                  Container(
-                                    margin: EdgeInsets.only(top: 4),
-                                    decoration: BoxDecoration(
-                                        color: theme.primaryColor,
-                                        borderRadius: BorderRadius.all(
-                                            Radius.circular(2.5))),
-                                    height: 5,
-                                    width: 5,
-                                  )
-                                ],
-                              )
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Icon(
+                              Icons.home,
+                              color: theme.colorScheme.primary,
+                            ),
+                            Container(
+                              margin: EdgeInsets.only(top: 4),
+                              decoration: BoxDecoration(
+                                  color: theme.primaryColor,
+                                  borderRadius: BorderRadius.all(
+                                      Radius.circular(2.5))),
+                              height: 5,
+                              width: 5,
+                            )
+                          ],
+                        )
                             : Icon(
-                                Icons.home_outlined,
-                                color: theme.colorScheme.onBackground,
-                              ),
+                          Icons.home_outlined,
+                          color: theme.colorScheme.onBackground,
+                        ),
                       ),
-                      // Container(
-                      //     child: (_currentIndex == 1)
-                      //         ? Column(
-                      //             mainAxisSize: MainAxisSize.min,
-                      //             children: <Widget>[
-                      //               Icon(
-                      //                 Icons.directions_run,
-                      //                 color: theme.colorScheme.primary,
-                      //               ),
-                      //               Container(
-                      //                 margin: EdgeInsets.only(top: 4),
-                      //                 decoration: BoxDecoration(
-                      //                     color: theme.primaryColor,
-                      //                     borderRadius: BorderRadius.all(
-                      //                         Radius.circular(2.5))),
-                      //                 height: 5,
-                      //                 width: 5,
-                      //               )
-                      //             ],
-                      //           )
-                      //         : Icon(
-                      //             Icons.directions_run_outlined,
-                      //             color: theme.colorScheme.onBackground,
-                      //           )),
                       Container(
-                          child: (_currentIndex == 1)
+                        child: (_currentIndex == 1)
+                            ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Icon(
+                              Icons.analytics,
+                              color: theme.colorScheme.primary,
+                            ),
+                            Container(
+                              margin: EdgeInsets.only(top: 4),
+                              decoration: BoxDecoration(
+                                  color: theme.primaryColor,
+                                  borderRadius: BorderRadius.all(
+                                      Radius.circular(2.5))),
+                              height: 5,
+                              width: 5,
+                            )
+                          ],
+                        )
+                            : Icon(
+                          Icons.analytics_outlined,
+                          color: theme.colorScheme.onBackground,
+                        ),
+                      ),
+                      Container(
+                          child: (_currentIndex == 2)
                               ? Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: <Widget>[
@@ -165,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen>
                                   color: theme.colorScheme.onBackground,
                                 )),
                       Container(
-                          child: (_currentIndex == 2)
+                          child: (_currentIndex == 3)
                               ? Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: <Widget>[
@@ -194,8 +206,9 @@ class _HomeScreenState extends State<HomeScreen>
             body: TabBarView(
               controller: _tabController,
               children: <Widget>[
-                HealthHomeScreen(),
-                HealthScheduleScreen( changeindex:changeTab),
+                Platform.isWindows ? HealthHomeScreen() : DocumentScannerScreen(),
+                AnalysisScreen(),
+                TableEventsExample(),
                 HealthProfileScreen(),
               ],
             ),

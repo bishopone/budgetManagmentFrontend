@@ -1,249 +1,388 @@
+/* eslint-disable react/prop-types */
 import Grid from "@mui/material/Grid";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 
-import React, { useState, useEffect } from "react";
-import api from "../../api";
-import Icon from "@mui/material/Icon";
+import React from "react";
 
 // Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
-import ReportsBarChart from "examples/Charts/BarCharts/ReportsBarChart";
 import PieChart from "examples/Charts/PieChart/index";
 import VerticalBarChart from "examples/Charts/BarCharts/VerticalBarChart";
-import DefaultLineChart from "examples/Charts/LineCharts/DefaultLineChart";
 import ComplexStatisticsCard from "examples/Cards/StatisticsCards/ComplexStatisticsCard";
-
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 // Data
-
+import DataTable from "examples/Tables/DataTable";
+import ErrorComponent from "examples/Error";
+import CircularProgress from "@mui/material/CircularProgress";
 import { useNavigate } from "react-router-dom";
 import MDButton from "components/MDButton";
-import { Card } from "@mui/material";
+import { useAnalyticsData } from "./api";
+import FlowModal from "./modal";
 
-function Dashboard() {
+function formatHours(decimalHours) {
+  const roundedHours = Math.round(decimalHours * 10) / 10;
+  const formattedString = `${roundedHours}hr`;
+  return formattedString;
+}
+
+function formatCurrency(value) {
+  return parseFloat(value).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
+function Analytics() {
   const navigate = useNavigate();
   const isAuthenticated = localStorage.getItem("token");
+  const { data, isLoading, isError, error } = useAnalyticsData();
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [requestid, setRequestid] = React.useState(null);
 
-  const [distributions, setDistributions] = useState({});
-  const [barCharts, setBarCharts] = useState("salaryDistribution");
-  const [pieChart, setPieChart] = useState("educationLevelDistribution");
-  const [lineCharts, setLineCharts] = useState("ageGroupsDistribution");
+  const handleClose = () => {
+    setIsOpen(false);
+  };
 
-  useEffect(() => {
-    async function fetchData() {
-      const token = localStorage.getItem("token");
+  const handleOpen = () => {
+    setIsOpen(true);
+  };
 
-      await api
-        .get("/analysis/distribution", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        .then((response) => {
-          setDistributions(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching total documents:", error);
-        });
+  const handleHistoryOpen = (id) => {
+    setRequestid(id);
+    setIsOpen(true);
+  };
+
+  const handleGeneratePdf = async () => {
+    try {
+      const gridContainer = document.getElementById("grid-container");
+      const pdfWidth = 190;
+      const pdf = new jsPDF("p", "mm", "a4");
+      const firstHalfImage = await html2canvas(gridContainer, {
+        height: gridContainer.offsetHeight,
+      });
+      pdf.addImage(firstHalfImage.toDataURL("image/png"), "PNG", 10, 10, pdfWidth, 290);
+      pdf.save("analytics.pdf");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
     }
-
-    fetchData();
-  }, []);
+  };
 
   if (!isAuthenticated) {
-    // Redirect to login page if not authenticated
-    navigate("/authentication/sign-in");
-    return null;
+    navigate("/sign-in");
   }
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <Grid
+          container
+          spacing={0}
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          sx={{ minHeight: "100vh" }}
+        >
+          <Grid item xs={3}>
+            <CircularProgress color="inherit" />
+          </Grid>
+        </Grid>
+      </DashboardLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <Grid
+          container
+          spacing={0}
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          sx={{ minHeight: "100vh" }}
+        >
+          <Grid item xs={3}>
+            <ErrorComponent error={error} />
+          </Grid>
+        </Grid>
+      </DashboardLayout>
+    );
+  }
+
+  const { distributions, requests } = data;
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      <MDBox py={3}>
+      <MDButton onClick={handleGeneratePdf}>Generate PDF</MDButton>
+      <MDBox py={3} id="grid-container">
         <Grid container spacing={3}>
-          {Object.keys(distributions).length !== 0
-            ? distributions.genderDistribution.labels.map((label, index) => (
-                <Grid item key={index} xs={12} md={6} lg={3}>
-                  <MDBox mb={1.5}>
-                    <ComplexStatisticsCard
-                      icon={label.toLowerCase()}
-                      title={label}
-                      count={distributions.genderDistribution.datasets[index]}
-                      percentage={{
-                        color: "success",
-                        amount: "",
-                        label: `The Total Number of ${label}s.`,
-                      }}
-                    />
-                  </MDBox>
-                </Grid>
-              ))
-            : null}
-          {Object.keys(distributions).length !== 0
-            ? distributions.maritalStatusDistribution.labels.map((label, index) => (
-                <Grid item key={index} xs={12} md={6} lg={3}>
-                  <MDBox mb={1.5}>
-                    <ComplexStatisticsCard
-                      icon={"people"}
-                      title={label}
-                      count={distributions.maritalStatusDistribution.datasets[index]}
-                      percentage={{
-                        color: "success",
-                        amount: "",
-                        label: `The Total Number of ${label}.`,
-                      }}
-                    />
-                  </MDBox>
-                </Grid>
-              ))
-            : null}
-          {Object.keys(distributions).length !== 0
-            ? distributions.languageDistribution.labels.map((label, index) => (
-                <Grid item key={index} xs={12} md={6} lg={3}>
-                  <MDBox mb={1.5}>
-                    <ComplexStatisticsCard
-                      icon={"language"}
-                      title={label}
-                      count={distributions.languageDistribution.datasets[index]}
-                      percentage={{
-                        color: "success",
-                        amount: "",
-                        label: `The Total Number of ${label}.`,
-                      }}
-                    />
-                  </MDBox>
-                </Grid>
-              ))
-            : null}
+          {Object.keys(distributions).length !== 0 ? (
+            <Grid item xs={12} md={6} lg={4}>
+              <MDBox mb={1.5}>
+                <ComplexStatisticsCard
+                  icon={"comparearrows"}
+                  title={"አማካይ የማጠናቀቂያ ጊዜ"}
+                  count={
+                    formatHours(distributions?.averageProcessingTime?.AverageProcessingTime) ?? 0
+                  }
+                  percentage={{
+                    color: "success",
+                    amount: "",
+                    label: `ጥያቄን ለማጠናቀቅ አማካይ ጊዜ`,
+                  }}
+                />
+              </MDBox>
+            </Grid>
+          ) : null}
+          {Object.keys(distributions).length !== 0 ? (
+            <Grid item xs={12} md={6} lg={4}>
+              <MDBox mb={1.5}>
+                <ComplexStatisticsCard
+                  icon={"money"}
+                  title={"ትልቁ የበጀት ጥያቄ"}
+                  count={formatCurrency(distributions?.largestAndSmallest?.LargestTransfer) ?? 0}
+                  percentage={{
+                    color: "success",
+                    amount: "",
+                    label: `የተጠየቀው ትልቁ የበጀት ጥያቄ`,
+                  }}
+                />
+              </MDBox>
+            </Grid>
+          ) : null}
+          {Object.keys(distributions).length !== 0 ? (
+            <Grid item xs={12} md={6} lg={4}>
+              <MDBox mb={1.5}>
+                <ComplexStatisticsCard
+                  icon={"money"}
+                  title={"ትንሹ የበጀት ጥያቄ"}
+                  count={formatCurrency(distributions?.largestAndSmallest?.SmallestTransfer) ?? 0}
+                  percentage={{
+                    color: "success",
+                    amount: "",
+                    label: `የተጠየቀው ትንሹ  የበጀት ጥያቄ`,
+                  }}
+                />
+              </MDBox>
+            </Grid>
+          ) : null}
         </Grid>
         <MDBox mt={4.5}>
           <Grid container spacing={3} columns={12}>
-            <Grid item xs={12} md={6} lg={4}>
+            <Grid item xs={12} md={6} lg={6}>
               <MDBox mb={3}>
-                <Card>
-                  <MDBox mb={3}>
-                    <MDButton onClick={() => setBarCharts("salaryDistribution")}>
-                      {barCharts === "salaryDistribution" ? <Icon>checkbox</Icon> : null} &nbsp;
-                      SALARY
-                    </MDButton>
-                    <MDButton onClick={() => setBarCharts("educationLevelDistribution")}>
-                      {barCharts === "educationLevelDistribution" ? <Icon>checkbox</Icon> : null}{" "}
-                      &nbsp; EDUCATION
-                    </MDButton>
-                    <MDButton onClick={() => setBarCharts("ageGroupsDistribution")}>
-                      {barCharts === "ageGroupsDistribution" ? <Icon>checkbox</Icon> : null} &nbsp;
-                      AGE
-                    </MDButton>
-                  </MDBox>
-                  <VerticalBarChart
-                    icon={{ color: "info", component: "leaderboard" }}
-                    title="Vertical Bar Chart"
-                    description="Sales related to age average"
-                    chart={
-                      Object.keys(distributions).length !== 0
-                        ? {
-                            labels: distributions[barCharts].labels,
-                            datasets: [
-                              {
-                                label: "Sales by age",
-                                color: "dark",
-                                data: distributions[barCharts].datasets,
-                              },
-                            ],
-                          }
-                        : {}
-                    }
-                  />
-                </Card>
+                <VerticalBarChart
+                  icon={{ color: "info", component: "workspaces" }}
+                  title="የበጀት ዓይነቶች"
+                  description="የበጀት አይነት የገንዘብ ልውውጥ ለእያንዳንዱ የበጀት ዓይነቶች"
+                  chart={
+                    Object.keys(distributions).length !== 0
+                      ? {
+                          labels: distributions.averageTransferAmountByType.labels,
+                          datasets: distributions.averageTransferAmountByType.datasets,
+                        }
+                      : {}
+                  }
+                />
               </MDBox>
             </Grid>
-            <Grid item xs={12} md={6} lg={4}>
+            <Grid item xs={12} md={6} lg={6}>
               <MDBox mb={3}>
-                <Card>
-                  <MDBox mb={3}>
-                    <MDButton onClick={() => setPieChart("salaryDistribution")}>
-                      {pieChart === "salaryDistribution" ? <Icon>checkbox</Icon> : null} &nbsp;
-                      SALARY
-                    </MDButton>
-                    <MDButton onClick={() => setPieChart("educationLevelDistribution")}>
-                      {pieChart === "educationLevelDistribution" ? <Icon>checkbox</Icon> : null}{" "}
-                      &nbsp; EDUCATION
-                    </MDButton>
-                    <MDButton onClick={() => setPieChart("ageGroupsDistribution")}>
-                      {pieChart === "ageGroupsDistribution" ? <Icon>checkbox</Icon> : null} &nbsp;
-                      AGE
-                    </MDButton>
-                  </MDBox>
-                  <PieChart
-                    icon={{ color: "info", component: "leaderboard" }}
-                    title="Pie Chart"
-                    description="Analytics Insights"
-                    chart={
-                      Object.keys(distributions).length !== 0
-                        ? {
-                            labels: distributions[pieChart].labels,
-                            datasets: {
-                              label: "Projects",
-                              backgroundColors: ["info", "primary", "dark", "secondary", "primary"],
-                              data: distributions[pieChart].datasets,
-                            },
-                          }
-                        : {}
-                    }
-                  />
-                </Card>
+                <PieChart
+                  icon={{ color: "info", component: "workspaces" }}
+                  title="የበጀት ዓይነቶች"
+                  description="ለእያንዳንዱ የበጀት ዓይነቶች የገንዘብ ልውውጥ መጠን"
+                  chart={
+                    Object.keys(distributions).length !== 0
+                      ? {
+                          labels: distributions.averageTransferAmountByType.labels,
+                          datasets: {
+                            label: "amount",
+                            backgroundColors: ["info", "primary", "dark", "secondary", "primary"],
+                            data: distributions.averageTransferAmountByType.datasets[0].data,
+                          },
+                        }
+                      : {}
+                  }
+                />
+              </MDBox>
+            </Grid>
+            <Grid item xs={12} md={6} lg={6}>
+              <MDBox mb={3}>
+                <VerticalBarChart
+                  icon={{ color: "info", component: "leaderboard" }}
+                  title="የበጀት ሁኔታ"
+                  description="ከሁኔታ ጋር አጠቃላይ የጥያቄዎች ብዛት።"
+                  chart={
+                    Object.keys(distributions).length !== 0
+                      ? {
+                          labels: distributions.requestStats.labels,
+                          datasets: distributions.requestStats.datasets,
+                        }
+                      : {}
+                  }
+                />
+              </MDBox>
+            </Grid>
+            <Grid item xs={12} md={6} lg={6}>
+              <MDBox mb={3}>
+                <PieChart
+                  icon={{ color: "info", component: "leaderboard" }}
+                  title="የበጀት ሁኔታ"
+                  description="ከሁኔታ ጋር አጠቃላይ የጥያቄዎች ብዛት።"
+                  chart={
+                    Object.keys(distributions).length !== 0
+                      ? {
+                          labels: distributions.requestStats.labels,
+                          datasets: {
+                            label: "Projects",
+                            backgroundColors: ["info", "primary", "dark", "secondary", "primary"],
+                            data: distributions.requestStats.datasets[0].data,
+                          },
+                        }
+                      : {}
+                  }
+                />
               </MDBox>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
+            <Grid item xs={12} md={6} lg={6}>
               <MDBox mb={3}>
-                <Card>
-                  <MDBox mb={3}>
-                    <MDButton onClick={() => setLineCharts("salaryDistribution")}>
-                      {lineCharts === "salaryDistribution" ? <Icon>checkbox</Icon> : null} &nbsp;
-                      SALARY
-                    </MDButton>
-                    <MDButton onClick={() => setLineCharts("educationLevelDistribution")}>
-                      {lineCharts === "educationLevelDistribution" ? <Icon>checkbox</Icon> : null}{" "}
-                      &nbsp; EDUCATION
-                    </MDButton>
-                    <MDButton onClick={() => setLineCharts("ageGroupsDistribution")}>
-                      {lineCharts === "ageGroupsDistribution" ? <Icon>checkbox</Icon> : null} &nbsp;
-                      AGE
-                    </MDButton>
-                  </MDBox>
-                  <DefaultLineChart
-                    icon={{ color: "info", component: "leaderboard" }}
-                    title="Line Chart"
-                    description="Analytics Insights"
-                    chart={
-                      Object.keys(distributions).length !== 0
-                        ? {
-                            labels: distributions[lineCharts].labels,
-                            datasets: [
-                              {
-                                label: "Organic Search",
-                                color: "info",
-                                data: distributions[lineCharts].datasets,
-                              },
-                            ],
-                          }
-                        : {}
-                    }
-                  />
-                </Card>
+                <VerticalBarChart
+                  icon={{ color: "info", component: "domain" }}
+                  title="ቢሮዎች"
+                  description="ከእያንዳንዱ ክፍል የጥያቄዎች ብዛት።"
+                  chart={
+                    Object.keys(distributions).length !== 0
+                      ? {
+                          labels: distributions.requestsByRequester.labels,
+                          datasets: distributions.requestsByRequester.datasets,
+                        }
+                      : {}
+                  }
+                />
+              </MDBox>
+            </Grid>
+            <Grid item xs={12} md={6} lg={6}>
+              <MDBox mb={3}>
+                <PieChart
+                  icon={{ color: "info", component: "domain" }}
+                  title="ቢሮዎች"
+                  description="ከእያንዳንዱ ክፍል የጥያቄዎች ብዛት።"
+                  chart={
+                    Object.keys(distributions).length !== 0
+                      ? {
+                          labels: distributions.requestsByRequester.labels,
+                          datasets: {
+                            label: "ጥያቄዎች",
+                            backgroundColors: ["info", "primary", "dark", "secondary", "primary"],
+                            data: distributions.requestsByRequester.datasets[0].data,
+                          },
+                        }
+                      : {}
+                  }
+                />
+              </MDBox>
+            </Grid>
+            <Grid item xs={12} md={6} lg={6}>
+              <MDBox mb={3}>
+                <VerticalBarChart
+                  icon={{ color: "info", component: "today" }}
+                  title="የጥያቄ ቀናት"
+                  description="በጊዜ ላይ የተመሰረቱ ጥያቄዎች"
+                  chart={
+                    Object.keys(distributions).length !== 0
+                      ? {
+                          labels: distributions.requestsByDate.labels,
+                          datasets: distributions.requestsByDate.datasets,
+                        }
+                      : {}
+                  }
+                />
+              </MDBox>
+            </Grid>
+            <Grid item xs={12} md={6} lg={6}>
+              <MDBox mb={3}>
+                <PieChart
+                  icon={{ color: "info", component: "today" }}
+                  title="የጥያቄ ቀናት"
+                  description="በጊዜ ላይ የተመሰረቱ ጥያቄዎች"
+                  chart={
+                    Object.keys(distributions).length !== 0
+                      ? {
+                          labels: distributions.requestsByDate.labels,
+                          datasets: {
+                            label: "ጥያቄዎች",
+                            backgroundColors: ["info", "primary", "dark", "secondary", "primary"],
+                            data: distributions.requestsByDate.datasets[0].data,
+                          },
+                        }
+                      : {}
+                  }
+                />
+              </MDBox>
+            </Grid>
+            <Grid item xs={12} md={12} lg={12}>
+              <MDBox mb={3}>
+                <VerticalBarChart
+                  icon={{ color: "info", component: "receiptlong" }}
+                  title="የበጀት ኮዶች"
+                  description="ከበጀት ኮድ ወደ የበጀት ኮድ የተላለፈው የገንዘብ መጠን።"
+                  chart={
+                    Object.keys(distributions).length !== 0
+                      ? {
+                          labels: distributions.budgetcodes.labels,
+                          datasets: distributions.budgetcodes.datasets,
+                        }
+                      : {}
+                  }
+                />
               </MDBox>
             </Grid>
           </Grid>
         </MDBox>
       </MDBox>
+      <MDBox>
+        <DataTable
+          canSearch
+          table={{
+            columns: [
+              { Header: "ቁ.", accessor: "index", width: "15%" },
+              { Header: "ID", accessor: "RequestID", width: "25%" },
+              { Header: "አይነት", accessor: "Type", width: "25%" },
+              { Header: "ብር", accessor: "Amount", width: "20%" },
+              { Header: "ከ", accessor: "BudgetFrom", width: "20%" },
+              { Header: "ወደ", accessor: "BudgetTo", width: "20%" },
+              { Header: "ሁኔታ", accessor: "RequestStatus", width: "20%" },
+              { Header: "ቀን", accessor: "RequestDate", width: "20%" },
+              {
+                Header: "history",
+                accessor: "History",
+                width: "20%",
+                Cell: ({ row }) => (
+                  <MDButton onClick={() => handleHistoryOpen(row.original.RequestID)}>
+                    HISTORY
+                  </MDButton>
+                ),
+              },
+            ],
+            rows: [...requests],
+          }}
+        />
+      </MDBox>
+      <FlowModal isOpen={isOpen} handleClose={handleClose} id={requestid} />
+
       <Footer />
     </DashboardLayout>
   );
 }
 
-export default Dashboard;
+export default Analytics;

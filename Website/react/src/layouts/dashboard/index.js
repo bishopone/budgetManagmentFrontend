@@ -15,12 +15,14 @@ Coded by www.creative-tim.com
 
 // @mui material components
 import Grid from "@mui/material/Grid";
+import ErrorComponent from "examples/Error";
+import CircularProgress from "@mui/material/CircularProgress";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 
-import React, { useState, useEffect } from "react";
-import api from "../../api";
+import React from "react";
+import { useDashboardData } from "./api";
 
 // Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -29,89 +31,57 @@ import Footer from "examples/Footer";
 import ReportsBarChart from "examples/Charts/BarCharts/ReportsBarChart";
 import ReportsLineChart from "examples/Charts/LineCharts/ReportsLineChart";
 import ComplexStatisticsCard from "examples/Cards/StatisticsCards/ComplexStatisticsCard";
-
-// Data
-
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import useAuth from "context/authContext";
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const isAuthenticated = localStorage.getItem("token");
+  useAuth();
+  const { t } = useTranslation();
+  const { data, isLoading, isError, error } = useDashboardData();
 
-  const [totalBudget, setTotalBudget] = useState(0);
-  const [totalAmount, setTotalAmount] = useState(0);
-  const [finishedRequestCount, setFinishedRequestCount] = useState(0);
-  const [finishedBudgetAmount, setFinishedBudgetAmount] = useState(0);
-  const [budgetFrequency, setBudgetFrequency] = useState({});
-
-  useEffect(() => {
-    async function fetchData() {
-      const token = localStorage.getItem("token");
-
-      await api
-        .get("/dashboard/budget-count", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        .then((response) => {
-          setTotalBudget(response.data.totalNumberOfBudget);
-        })
-        .catch((error) => {
-          console.error("Error fetching total documents:", error);
-        });
-
-      // Fetch total number of employees
-      await api
-        .get("/dashboard/budget-amount-count")
-        .then((response) => {
-          const formattedNumber = new Intl.NumberFormat().format(response.data.totalAmount);
-
-          setTotalAmount(formattedNumber);
-        })
-        .catch((error) => {
-          console.error("Error fetching total employees:", error);
-        });
-
-      // Fetch number of uploaded documents in the last week
-      await api
-        .get("/dashboard/budget-count-finished")
-        .then((response) => {
-          setFinishedRequestCount(response.data.finishedRequests);
-        })
-        .catch((error) => {
-          console.error("Error fetching uploaded documents count:", error);
-        });
-      await api
-        .get("/dashboard/budget-amount-count-finished")
-        .then((response) => {
-          const formattedNumber = new Intl.NumberFormat().format(
-            response.data.FinishedBudgetAmount
-          );
-          setFinishedBudgetAmount(formattedNumber);
-        })
-        .catch((error) => {
-          console.error("Error fetching uploaded documents count:", error);
-        });
-
-      await api
-        .get("/dashboard/budget-monthly")
-        .then((response) => {
-          setBudgetFrequency(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching uploaded documents count:", error);
-        });
-    }
-
-    fetchData();
-  }, []);
-
-  if (!isAuthenticated) {
-    navigate("/authentication/sign-in");
-    return null;
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <Grid
+          container
+          spacing={0}
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          sx={{ minHeight: "100vh" }}
+        >
+          <Grid item xs={3}>
+            <CircularProgress color="inherit" />
+          </Grid>
+        </Grid>
+      </DashboardLayout>
+    );
   }
+
+  if (isError) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <Grid
+          container
+          spacing={0}
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          sx={{ minHeight: "100vh" }}
+        >
+          <Grid item xs={3}>
+            <ErrorComponent error={error} />
+          </Grid>
+        </Grid>
+      </DashboardLayout>
+    );
+  }
+
+  const { totalBudget, totalAmount, finishedRequestCount, finishedBudgetAmount, budgetFrequency } =
+    data;
 
   return (
     <DashboardLayout>
@@ -123,12 +93,12 @@ function Dashboard() {
               <ComplexStatisticsCard
                 color="dark"
                 icon="money"
-                title="Budget"
-                count={totalBudget}
+                title={t("Total Budget")}
+                count={totalBudget.totalNumberOfBudget}
                 percentage={{
                   color: "success",
                   amount: "",
-                  label: "The Total Number of Budget requested.",
+                  label: t("Percentage of total budget spent."),
                 }}
               />
             </MDBox>
@@ -137,12 +107,12 @@ function Dashboard() {
             <MDBox mb={1.5}>
               <ComplexStatisticsCard
                 icon="paid"
-                title="Amount in Birr"
+                title={t("Total in Birr")}
                 count={totalAmount}
                 percentage={{
                   color: "success",
                   amount: "",
-                  label: "The Total Amount of Budget requested in Birr.",
+                  label: t("Percentage of total budget spent in Birr."),
                 }}
               />
             </MDBox>
@@ -153,12 +123,12 @@ function Dashboard() {
               <ComplexStatisticsCard
                 color="success"
                 icon="done"
-                title="Requests Completed"
+                title={t("Requests Finished")}
                 count={finishedRequestCount}
                 percentage={{
                   color: "success",
                   amount: "",
-                  label: "The Total Number of Completed Budget Requests",
+                  label: t("Percentage of finished request count."),
                 }}
               />
             </MDBox>
@@ -168,12 +138,12 @@ function Dashboard() {
               <ComplexStatisticsCard
                 color="primary"
                 icon="payment"
-                title="money transfered"
+                title={t("Budgets Completed")}
                 count={finishedBudgetAmount}
                 percentage={{
                   color: "success",
                   amount: "",
-                  label: "The Total Number of Completed Money Transfer",
+                  label: t("Percentage of completed budget amount."),
                 }}
               />
             </MDBox>
@@ -185,9 +155,9 @@ function Dashboard() {
               <MDBox mb={3}>
                 <ReportsBarChart
                   color="info"
-                  title="Budget Request Frequency"
-                  description="Number of Budget Transfer Reqested"
-                  date="just updated"
+                  title={t("Budget Requests Frequency")}
+                  description={t("Chart showing the frequency of budget requests.")}
+                  date={t("Current status report.")}
                   chart={budgetFrequency}
                 />
               </MDBox>
@@ -196,17 +166,10 @@ function Dashboard() {
               <MDBox mb={3}>
                 <ReportsLineChart
                   color="dark"
-                  title="Document Relationships"
-                  description="Types of Document And Relationships"
-                  date="just updated"
+                  title={t("Budget Requests Trend")}
+                  description={t("Chart showing the trend of budget requests.")}
+                  date={t("Current status report.")}
                   chart={budgetFrequency}
-                  // chart={{
-                  //   labels: ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-                  //   datasets: {
-                  //     label: "Sales",
-                  //     data: [450, 200, 100, 220, 500, 100, 400, 230, 500],
-                  //   },
-                  // }}
                 />
               </MDBox>
             </Grid>

@@ -37,9 +37,17 @@ function configs(labels, datasets) {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false,
+          display: true,
+        },
+        datalabels: {
+          color: "white",
+          formatter: (value, context) => {
+            console.log("value", value);
+            return `${context.chart.data.labels[context.dataIndex]}: ${value}%`;
+          },
         },
       },
+      showAllTooltips: true,
       interaction: {
         intersect: false,
         mode: "index",

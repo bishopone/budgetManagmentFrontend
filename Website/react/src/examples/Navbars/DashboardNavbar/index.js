@@ -6,7 +6,7 @@ import { useLocation, Link } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
-
+import api from "api";
 // @material-ui core components
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -39,6 +39,7 @@ import {
   setMiniSidenav,
   setOpenConfigurator,
 } from "context";
+import MDAvatar from "components/MDAvatar";
 
 function DashboardNavbar({ absolute, light, isMini, setSearchTerm }) {
   const searchTerm = localStorage.getItem("searchTerm");
@@ -50,7 +51,11 @@ function DashboardNavbar({ absolute, light, isMini, setSearchTerm }) {
   const navigate = useNavigate();
   const route = useLocation().pathname.split("/").slice(1);
   const currentRoute = useLocation().pathname;
-
+  const isAuthenticated = localStorage.getItem("token");
+  if (!isAuthenticated) {
+    navigate("/sign-in");
+    return null;
+  }
   useEffect(() => {
     // Setting the navbar type
     if (fixedNavbar) {
@@ -146,13 +151,20 @@ function DashboardNavbar({ absolute, light, isMini, setSearchTerm }) {
                 value={searchTermPrivate}
                 onChange={handleSearch}
                 onClick={() => navigate("/documents/search")}
-                autoFocus
               />
             </MDBox>
             <MDBox color={light ? "white" : "inherit"}>
-              <Link to="/authentication/sign-in/basic">
+              <Link to="/profile">
                 <IconButton sx={navbarIconButton} size="small" disableRipple>
-                  <Icon sx={iconsStyle}>account_circle</Icon>
+                  <MDAvatar
+                    padding="5px"
+                    src={`${api.getUri()}/${
+                      JSON.parse(localStorage.getItem("user"))?.ProfilePictureLink ?? ""
+                    }`}
+                    alt="name"
+                    variant="circle"
+                    size="sm"
+                  />
                 </IconButton>
               </Link>
               <IconButton
@@ -175,7 +187,7 @@ function DashboardNavbar({ absolute, light, isMini, setSearchTerm }) {
               >
                 <Icon sx={iconsStyle}>settings</Icon>
               </IconButton>
-              <IconButton
+              {/* <IconButton
                 size="small"
                 disableRipple
                 color="inherit"
@@ -186,7 +198,7 @@ function DashboardNavbar({ absolute, light, isMini, setSearchTerm }) {
                 onClick={handleOpenMenu}
               >
                 <Icon sx={iconsStyle}>notifications</Icon>
-              </IconButton>
+              </IconButton> */}
               {renderMenu()}
             </MDBox>
           </MDBox>

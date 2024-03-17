@@ -15,140 +15,152 @@ Coded by www.creative-tim.com
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
-import MDAvatar from "components/MDAvatar";
 import Icon from "@mui/material/Icon";
-import { Template, generate } from "@pdfme/generator";
 
-import template from "./template.json";
 import { useState, useEffect, useRef } from "react";
 // Material Dashboard 2 React examples
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import DataTable from "examples/Tables/DataTable";
-import UserForm from "./components/userform";
 import IconButton from "@mui/material/IconButton";
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
 
 import { useNavigate } from "react-router-dom";
-import { Navigate } from "react-router-dom";
 import api from "api";
-import MDTypography from "components/MDTypography";
+import LoadingModal from "examples/Loading"; // Make sure to adjust the import path based on your project structure
 import MDSnackbar from "components/MDSnackbar";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
-
-import MDButton from "components/MDButton";
-import { Modal, Backdrop, Fade, Box } from "@mui/material";
 import MaxWidthDialog from "./components/dialog/dialog";
-const style = {
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  width: "500px",
-  height: "500px",
-  transform: "translate(-50%, -50%)",
-  bgcolor: "background.paper",
-  border: "2px solid #000",
-  boxShadow: 24,
-  pt: 2,
-  px: 4,
-  pb: 3,
-};
+import MaxWidthDialogDetail from "./components/dialog/dialogdetail";
+import { useTranslation } from "react-i18next";
+import ErrorComponent from "examples/Error";
+import { CircularProgress, Grid } from "@mui/material";
+import { useFetchData } from "./api";
+
 // eslint-disable-next-line react/prop-types
 function Requests({ budgettype }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const isAuthenticated = localStorage.getItem("token");
   if (!isAuthenticated) {
-    navigate("/authentication/sign-in");
+    navigate("/sign-in");
     return null;
   }
-  const uiRef = useRef(null);
 
   const [reject, setIsReject] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState("");
+  const [type, setType] = useState("");
   const [users, setUsers] = useState([]);
   const [open, setOpen] = useState(false);
   const [fillter, setFillter] = useState(0);
-  const [selectedUser, setSelectedUser] = useState({});
   const [errorSB, setErrorSB] = useState(false);
   const [message, setMessage] = useState("");
   const openErrorSB = () => setErrorSB(true);
+  const [comment, setComment] = useState("");
   const closeErrorSB = () => setErrorSB(false);
   const [successSB, setSuccessSB] = useState(false);
   const openSuccessSB = () => setSuccessSB(true);
   const closeSuccessSB = () => setSuccessSB(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const {
+    data: Requests,
+    isLoading: isrequestLoading,
+    isError: isrequestError,
+    error: requestError,
+  } = useFetchData(fillter, budgettype);
+  // const [prevFillter, setPrevFillter] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, [fillter]);
+  // useEffect(() => {
+  //   if (prevFillter !== fillter) {
+  //     fetchData();
+  //     setPrevFillter(fillter);
+  //   }
+  // }, [fillter, prevFillter]);
 
-  async function fetchData() {
-    const token = localStorage.getItem("token");
-    const url = `/budget/${fillter === 0 ? `active/${budgettype}` : `${budgettype}`}`;
-    console.log(url);
-    await api
-      .get(url, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((response) => {
-        const userlist = [];
-        const budgetTypes = [
-          "Normal Budget",
-          "Capital Budget",
-          "Treasury Budget",
-          "Internal Budget",
-        ];
-        response.data.forEach((x) => {
-          const transformedUser = {
-            ...x,
-            option: (
-              <>
-                <IconButton color="warning" onClick={() => onView(x)}>
-                  <Icon>visibility</Icon>
-                </IconButton>
-                {fillter === 0 ? (
-                  <IconButton color="success" onClick={() => onNextStep(x.Type, x.RequestID)}>
-                    <Icon>thumb_up</Icon>
-                  </IconButton>
-                ) : null}
-                {fillter === 0 ? (
-                  <IconButton color="primary" onClick={() => onReject(x)}>
-                    <Icon>thumb_down</Icon>
-                  </IconButton>
-                ) : null}
-              </>
-            ),
-            typeName: budgetTypes[x.Type - 1],
-          };
+  const handleModalOpen = () => {
+    setModalVisible(true);
+  };
 
-          // Push the transformed object to the userlist array
-          userlist.push(transformedUser);
-        });
-        console.log(userlist);
-        setUsers(userlist);
-      })
-      .catch((error) => {
-        console.error("Error fetching users:", error);
-      });
-  }
+  const handleModalClose = () => {
+    setModalVisible(false);
+  };
+
+  // async function fetchData() {
+  //   const token = localStorage.getItem("token");
+  //   const url = `/budget/${fillter === 0 ? `active/${budgettype}` : `${budgettype}`}`;
+  //   console.log(url);
+  //   await api
+  //     .get(url, {
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     })
+  //     .then((response) => {
+  //       const userlist = [];
+  //       const budgetTypes = [
+  //         "Recurrent Budget",
+  //         "Capital Budget",
+  //         "Contengency Budget",
+  //         "Internal Budget",
+  //       ];
+  //       response.data.forEach((x) => {
+  //         const transformedUser = {
+  //           ...x,
+  //           option: (
+  //             <>
+  //               <IconButton color="warning" onClick={() => onView(x)}>
+  //                 <Icon>visibility</Icon>
+  //               </IconButton>
+  //               {fillter === 0 ? (
+  //                 <IconButton
+  //                   color="success"
+  //                   onClick={() => onNextStep(x.Type, x.RequestID, x.comments)}
+  //                 >
+  //                   <Icon>thumb_up</Icon>
+  //                 </IconButton>
+  //               ) : null}
+  //               {fillter === 0 ? (
+  //                 <IconButton color="primary" onClick={() => onReject(x)}>
+  //                   <Icon>thumb_down</Icon>
+  //                 </IconButton>
+  //               ) : null}
+  //             </>
+  //           ),
+  //           BudgetFrom:
+  //             x.BudgetFrom === 0
+  //               ? "መደበኛ መጠባበቀያ"
+  //               : x.BudgetFrom === 1
+  //               ? "ካፒታል መጠባበቀያ"
+  //               : x.BudgetFrom,
+  //           typeName: t(budgetTypes[x.Type - 1]),
+  //         };
+
+  //         // Push the transformed object to the userlist array
+  //         userlist.push(transformedUser);
+  //       });
+  //       console.log(userlist);
+  //       setUsers(userlist);
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error fetching users:", error);
+  //     });
+  // }
   const onView = async (value) => {
     try {
+      handleModalOpen();
+      const token = localStorage.getItem("token");
+
       const pdf = await api.get(`/pdf/generate-pdf/${value.RequestID}`, {
-        headers: { "Content-Type": "application/pdf" },
+        headers: { "Content-Type": "application/pdf", Authorization: `Bearer ${token}` },
         responseType: "arraybuffer",
       });
-
       const blob = new Blob([pdf.data], { type: "application/pdf" });
 
       // Create a URL for the blob
       const url = URL.createObjectURL(blob);
+      handleModalClose();
 
       // Open the PDF in a new tab
       window.open(url, "_blank");
@@ -156,6 +168,7 @@ function Requests({ budgettype }) {
       // Release the URL when it's no longer needed to free up resources
       URL.revokeObjectURL(url);
     } catch (error) {
+      handleModalClose();
       console.error("Error fetching PDF:", error);
     }
   };
@@ -167,7 +180,8 @@ function Requests({ budgettype }) {
     setIsReject(true);
   };
 
-  const onNextStep = async (type, requestId) => {
+  const onNextStep = async (type, requestId, comment) => {
+    // console.log(type, requestId);
     const token = localStorage.getItem("token");
     await api
       .get(`/budget/nextauth/${type}/${requestId}`, {
@@ -177,9 +191,11 @@ function Requests({ budgettype }) {
         },
       })
       .then((response) => {
-        console.log(response.data);
-        setAdminUsers(response.data);
+        console.log("comment", comment);
+        setComment(comment || "");
+        setAdminUsers(response.data.auths);
         setSelectedRequest(requestId);
+        setType(response.data.type);
         handleAdminChoice(true);
       })
       .catch((error) => {
@@ -271,10 +287,97 @@ function Requests({ budgettype }) {
   );
   const [adminUsers, setAdminUsers] = useState([]);
   const handleChange = (event, newValue) => {
-    console.log(newValue);
     setFillter(newValue);
   };
+  if (isrequestLoading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <Grid
+          container
+          spacing={0}
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          sx={{ minHeight: "100vh" }}
+        >
+          <Grid item xs={3}>
+            <CircularProgress color="inherit" />
+          </Grid>
+        </Grid>
+      </DashboardLayout>
+    );
+  }
 
+  if (isrequestError) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <Grid
+          container
+          spacing={0}
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          sx={{ minHeight: "100vh" }}
+        >
+          <Grid item xs={3}>
+            <ErrorComponent error={requestError} />
+          </Grid>
+        </Grid>
+      </DashboardLayout>
+    );
+  }
+  const displayRequest = () => {
+    const userlist = [];
+    const budgetTypes = [
+      "Recurrent Budget",
+      "Capital Budget",
+      "Contengency Budget",
+      "Internal Budget",
+    ];
+    Requests.forEach((x) => {
+      console.log(x);
+      const transformedUser = {
+        ...x,
+        option: (
+          <>
+            <IconButton color="warning" onClick={() => onView(x)}>
+              <Icon>visibility</Icon>
+            </IconButton>
+            {fillter === 0 ? (
+              <IconButton color="success" onClick={() => onNextStep(x.Type, x.RequestID)}>
+                <Icon>thumb_up</Icon>
+              </IconButton>
+            ) : null}
+            {fillter === 0 ? (
+              <IconButton color="primary" onClick={() => onReject(x)}>
+                <Icon>thumb_down</Icon>
+              </IconButton>
+            ) : null}
+          </>
+        ),
+        typeName: t(budgetTypes[x.Type - 1]),
+        BudgetFromformated: formatNumberWithSlashes(x.BudgetFrom),
+        BudgetToformated: formatNumberWithSlashes(x.BudgetTo),
+      };
+      userlist.push(transformedUser);
+    });
+    return userlist;
+  };
+  function formatNumberWithSlashes(input) {
+    const inputString = input.toString(); // Convert input to a string
+    let formattedString = "";
+    for (let i = 0; i < inputString.length; i += 3) {
+      const segment = inputString.slice(i, i + 3);
+      formattedString += segment;
+      if (i + 3 < inputString.length) {
+        formattedString += "/";
+      }
+    }
+    console.log("formattedString", formattedString);
+    return formattedString;
+  }
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -294,8 +397,8 @@ function Requests({ budgettype }) {
             onChange={handleChange}
             aria-label="disabled tabs example"
           >
-            <Tab label="Assigned To Me" />
-            <Tab label="All Asigned" />
+            <Tab label={t("Assigned To Me")} />
+            <Tab label={t("All Assigned")} />
           </Tabs>
         </MDBox>
         <MDBox pt={2} px={2}></MDBox>
@@ -304,31 +407,57 @@ function Requests({ budgettype }) {
             table={{
               columns: [
                 { Header: "RequestID", accessor: "RequestID", width: "25%" },
-                { Header: "Budget Type", accessor: "typeName", width: "25%" },
-                { Header: "From Treasury", accessor: "BudgetFrom", width: "20%" },
-                { Header: "To Dep", accessor: "BudgetTo", width: "20%" },
-                { Header: "Date", accessor: "ChangeDate", width: "20%" },
-                { Header: "Amount", accessor: "Amount", width: "20%" },
-                { Header: "State", accessor: "NewState", width: "25%" },
-                { Header: "option", accessor: "option", width: "20%" },
+                { Header: "የበጀት አይነት", accessor: "typeName", width: "25%" },
+                { Header: "የ ላኪ ስም", accessor: "UserName", width: "25%" },
+                { Header: "የ ተቁዋም ስም", accessor: "Name", width: "25%" },
+                { Header: "ከ", accessor: "BudgetFrom", width: "20%" },
+                { Header: "ወደ", accessor: "BudgetTo", width: "20%" },
+                { Header: "ቀን", accessor: "ChangeDate", width: "20%" },
+                { Header: "ብር", accessor: "Amount", width: "20%" },
+                { Header: "ሁኔታ", accessor: "NewState", width: "25%" },
+                { Header: "አስተያየት", accessor: "comments", width: "25%" },
+                { Header: "አማራጭ", accessor: "option", width: "20%" },
               ],
-              rows: [...users],
+              rows: displayRequest(),
             }}
           />
         </MDBox>
       </>
       <MDBox pt={2} px={2}></MDBox>
-      <MaxWidthDialog
-        isopen={open}
-        handleClose={handleClose}
-        adminUsers={adminUsers}
-        selectedRequest={selectedRequest}
-        fetchData={fetchData}
-        reject={reject}
-      />
+      {type !== "Worker" ? (
+        <MaxWidthDialog
+          isopen={open}
+          handleClose={handleClose}
+          adminUsers={adminUsers}
+          selectedRequest={selectedRequest}
+          // fetchData={fetchData}
+          reject={reject}
+          comments={comment}
+        />
+      ) : reject ? (
+        <MaxWidthDialog
+          isopen={open}
+          handleClose={handleClose}
+          adminUsers={adminUsers}
+          selectedRequest={selectedRequest}
+          // fetchData={fetchData}
+          reject={reject}
+          comments={comment}
+        />
+      ) : (
+        <MaxWidthDialogDetail
+          isopen={open}
+          handleClose={handleClose}
+          adminUsers={adminUsers}
+          selectedRequest={selectedRequest}
+          // fetchData={fetchData}
+          comments={comment}
+        />
+      )}
+
       {renderErrorSB}
       {renderSuccessSB}
-      <div ref={uiRef} />
+      <LoadingModal isVisible={modalVisible} onClose={handleModalClose} />
 
       <Footer />
     </DashboardLayout>

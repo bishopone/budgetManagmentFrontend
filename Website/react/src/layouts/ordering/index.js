@@ -24,6 +24,7 @@ import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import MDSnackbar from "components/MDSnackbar/index.js";
 import { MenuItem, Select } from "@mui/material";
+import MDBox from "components/MDBox/index.js";
 
 const style = {
   width: 400,
@@ -44,6 +45,7 @@ export const AllContainer = ({ fillter, tabid }) => {
           },
         })
         .then((response) => {
+          console.log("selam selam");
           console.log(response.data);
           setCards(response.data);
         })
@@ -58,6 +60,8 @@ export const AllContainer = ({ fillter, tabid }) => {
           },
         })
         .then((response) => {
+          console.log("selam");
+          console.log(response.data);
           setUsers(response.data);
         })
         .catch((error) => {
@@ -66,6 +70,7 @@ export const AllContainer = ({ fillter, tabid }) => {
     }
     const [errorSB, setErrorSB] = useState(false);
     const [message, setMessage] = useState("");
+    const [type, setType] = useState("");
     const openErrorSB = () => setErrorSB(true);
     const closeErrorSB = () => setErrorSB(false);
     const [successSB, setSuccessSB] = useState(false);
@@ -113,9 +118,7 @@ export const AllContainer = ({ fillter, tabid }) => {
         <Container
           key={card.AuthorityID}
           index={index}
-          id={card.AuthorityID}
-          text={card.AuthorityName}
-          users={card.child}
+          card={card}
           moveCard={moveCard}
           fetchData={fetchData}
           handleEdit={handleEditOpen}
@@ -161,6 +164,7 @@ export const AllContainer = ({ fillter, tabid }) => {
             BudgetTypeID: tabid,
             AuthorityName: inputText,
             selectedUsers: selectedUsers,
+            type: type,
           },
           {
             headers: {
@@ -191,6 +195,7 @@ export const AllContainer = ({ fillter, tabid }) => {
           {
             AuthorityName: inputText,
             selectedUsers: selectedUsers,
+            type: type,
           },
           {
             headers: {
@@ -262,18 +267,35 @@ export const AllContainer = ({ fillter, tabid }) => {
               value={inputText}
               onChange={handleTextChange}
             />
-            <Select
-              label="Users"
-              name="Users"
-              value={selectedUsers}
-              onChange={(value) => setSelectedUsers(value.target.value)}
-            >
-              {users.map((user) => (
-                <MenuItem value={user.UserID} key={user.UserID}>
-                  {user.Username}
+            <MDBox>
+              user
+              <Select
+                label="Users"
+                name="Users"
+                value={selectedUsers}
+                onChange={(value) => setSelectedUsers(value.target.value)}
+              >
+                {users.map((user) => (
+                  <MenuItem value={user.UserID} key={user.UserID}>
+                    {user.Username}
+                  </MenuItem>
+                ))}
+              </Select>
+              type
+              <Select
+                label="Type"
+                name="Type"
+                value={type}
+                onChange={(value) => setType(value.target.value)}
+              >
+                <MenuItem value="Worker" key="Worker">
+                  Worker
                 </MenuItem>
-              ))}
-            </Select>
+                <MenuItem value="Evaluater" key="Evaluater">
+                  Evaluater
+                </MenuItem>
+              </Select>
+            </MDBox>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose} color="primary">
@@ -334,8 +356,9 @@ function DragOrder() {
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
             <Tab label="Normal Budget" />
-            <Tab label="Capital Budget" />
-            <Tab label="Treasury Budget" />
+            <Tab label="Capital Own Budget" />
+            <Tab label="Capital Other Budget" />
+            <Tab label="Contingency Budget" />
             <Tab label="Internal Budget" />
           </Tabs>
         </Box>
@@ -346,10 +369,13 @@ function DragOrder() {
           <AllContainer fillter={"Capital"} tabid={2} />
         </CustomTabPanel>
         <CustomTabPanel value={value} index={2}>
-          <AllContainer fillter={"Treasury"} tabid={3} />
+          <AllContainer fillter={"CapitalOther"} tabid={5} />
         </CustomTabPanel>
         <CustomTabPanel value={value} index={3}>
-          <AllContainer fillter={"Internal"} tabid={4} />
+          <AllContainer fillter={"Contengency"} tabid={4} />
+        </CustomTabPanel>
+        <CustomTabPanel value={value} index={4}>
+          <AllContainer fillter={"Internal"} tabid={5} />
         </CustomTabPanel>
       </DndProvider>
       <Footer />

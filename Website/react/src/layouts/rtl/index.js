@@ -47,7 +47,7 @@ function RTL() {
 
   if (!isAuthenticated) {
     // Redirect to login page if not authenticated
-    navigate("/authentication/sign-in");
+    navigate("/sign-in");
     return null;
   }
   const [, dispatch] = useMaterialUIController();

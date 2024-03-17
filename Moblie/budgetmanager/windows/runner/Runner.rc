@@ -116,6 +116,8 @@ END
 // Generated from the TEXTINCLUDE 3 resource.
 //
 
+// And verify signature using DSA public key:
+DSAPub      DSAPEM      "../../dsa_pub.pem"
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED

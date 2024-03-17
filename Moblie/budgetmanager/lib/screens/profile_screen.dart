@@ -11,6 +11,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import 'package:budgetmanager/helpers/theme/app_theme.dart';
 
+import '../config.dart';
+
 class HealthProfileScreen extends StatefulWidget {
   @override
   _HealthProfileScreenState createState() => _HealthProfileScreenState();
@@ -47,6 +49,7 @@ class _HealthProfileScreenState extends State<HealthProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appConfig = AppConfigProvider.of(context)?.appConfig;
     return Scaffold(
         body: FutureBuilder<Map<String, dynamic>?>(
             future: getUserStorage(),
@@ -80,21 +83,23 @@ class _HealthProfileScreenState extends State<HealthProfileScreen> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.all(
                                   Radius.circular(8)),
-                              child: Image(
-                                image: NetworkImage(snapshot
-                                    .data!["ProfilePictureLink"]
-                                    .toString() ==
-                                    ""
-                                    ? "https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?w=740&t=st=1696599824~exp=1696600424~hmac=b1c23d7d66b5cd491fb7031a390d1f991a24ba0a03304ff2acfda8b3c4cddf0b"
-                                    : snapshot.data!["ProfilePictureLink"]
-                                    .toString()),
+                              child:  Image(
+                                image: NetworkImage("${appConfig?.apiBaseUrl}/${snapshot.data?["ProfilePictureLink"]?.toString() ?? ""}"
+                                  ,
+                                ),
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.cover,
+                                errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
+                                  // If there's an error loading the network image, use a local fallback image
+                                  return Image.asset(
+                                    "assets/profile.jpg",
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                  );
+                                },
                               ),
-                              //           child: FadeInImage(image: NetworkImage(snapshot.data!["ProfilePictureLink"].toString()==""?"https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?w=740&t=st=1696599824~exp=1696600424~hmac=b1c23d7d66b5cd491fb7031a390d1f991a24ba0a03304ff2acfda8b3c4cddf0b":snapshot.data!["ProfilePictureLink"].toString()),
-                              // placeholder: AssetImage('./assets/images/profile/avatar_1.jpg'),
-                              //         ),
                             ),
                           ),
                           Container(
@@ -203,13 +208,10 @@ class _HealthProfileScreenState extends State<HealthProfileScreen> {
                       child: Column(
                         children: [
                         settingsWidget(
-                        docName: "Profile Picture",
+                        docName: "Profile Setting",
                         icon: Icons.person,
                         action: () async {
-                          print("change profile picture");
-                          // final secureStorage = await FlutterSecureStorage();
-                          // secureStorage.deleteAll();
-                          // Navigator.pushReplacementNamed(context, '/auth');
+                          Navigator.pushNamed(context, '/profilesetting');
                         },),
                         Container(
                           margin: MySpacing.top(8),

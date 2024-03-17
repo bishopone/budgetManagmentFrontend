@@ -19,11 +19,17 @@ class _ImageWidgetState extends State<ImageWidget> {
       context: context,
       builder: (context) {
         return Dialog(
-          child: Image.file(
-            File(
-              widget.pictures[selectedImageIndex],
-            ),
-          ),
+          child:
+              widget.pictures[selectedImageIndex].toString().startsWith('http')
+                  ? Image.network(
+                      widget.pictures[selectedImageIndex],
+                      fit: BoxFit.contain,
+
+                    )
+                  : Image.file(
+                      File(widget.pictures[selectedImageIndex]),
+
+                    ),
         );
       },
     );
@@ -39,7 +45,9 @@ class _ImageWidgetState extends State<ImageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return  Row(
+    print("widget.pictures");
+    print(widget.pictures);
+    return Row(
       children: [
         for (var i = 0; i < widget.pictures.length; i++)
           GestureDetector(
@@ -50,11 +58,18 @@ class _ImageWidgetState extends State<ImageWidget> {
             },
             child: Stack(
               children: [
-                Image.file(
-                  File(widget.pictures[i]),
-                  width: 100,
-                  height: 100,
-                ),
+                widget.pictures[i].toString().startsWith('http')
+                    ? Image.network(
+                        widget.pictures[i].toString(),
+                        fit: BoxFit.contain,
+                        width: 300,
+                        height: 300,
+                      )
+                    : Image.file(
+                        File(widget.pictures[i].toString()),
+                        width: 300,
+                        height: 300,
+                      ),
                 Positioned(
                   left: 25,
                   child: Center(

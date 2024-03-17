@@ -16,7 +16,6 @@ Coded by www.creative-tim.com
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDAvatar from "components/MDAvatar";
-import Icon from "@mui/material/Icon";
 import { Template, generate } from "@pdfme/generator";
 
 import template from "./template.json";
@@ -28,6 +27,7 @@ import Footer from "examples/Footer";
 import DataTable from "examples/Tables/DataTable";
 import UserForm from "./components/userform";
 import IconButton from "@mui/material/IconButton";
+import Icon from "@mui/material/Icon";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
@@ -63,11 +63,11 @@ function Requests({ budgettype }) {
   const navigate = useNavigate();
   const isAuthenticated = localStorage.getItem("token");
   if (!isAuthenticated) {
-    navigate("/authentication/sign-in");
+    navigate("/sign-in");
     return null;
   }
   const uiRef = useRef(null);
-
+  const [reject, setIsReject] = useState(false);
   const [menu, setMenu] = useState("All");
   const [selectedRequest, setSelectedRequest] = useState("");
   const [users, setUsers] = useState([]);
@@ -81,23 +81,33 @@ function Requests({ budgettype }) {
   const [successSB, setSuccessSB] = useState(false);
   const openSuccessSB = () => setSuccessSB(true);
   const closeSuccessSB = () => setSuccessSB(false);
-  function formatNumberWithSlashes(input) {
-    const inputString = input.toString(); // Convert input to a string
-    let formattedString = "";
-    for (let i = 0; i < inputString.length; i += 3) {
-      const segment = inputString.slice(i, i + 3);
-      formattedString += segment;
-      if (i + 3 < inputString.length) {
-        formattedString += "/";
-      }
+  const [prevFillter, setPrevFillter] = useState(null);
+
+  useEffect(() => {
+    if (prevFillter !== fillter) {
+      fetchData();
+      setPrevFillter(fillter);
     }
-    console.log("formattedString", formattedString);
+  }, [fillter, prevFillter]);
+
+  function formatDateString(input) {
+    // Ensure the input is a 10-character string
+    const inputString = input.toString();
+    if (inputString.length !== 10) {
+      return inputString; // Return the input as-is if it doesn't match the expected length
+    }
+
+    // Split the input string into segments
+    const segment1 = inputString.substring(0, 3); // "111"
+    const segment2 = inputString.substring(3, 5); // "01"
+    const segment3 = inputString.substring(5, 7); // "01"
+    const segment4 = inputString.substring(7, 10); // "016"
+
+    // Concatenate the segments with slashes
+    const formattedString = `${segment1}/${segment2}/${segment3}/${segment4}`;
+
     return formattedString;
   }
-  useEffect(() => {
-    fetchData();
-  }, [fillter]);
-
   async function fetchData() {
     const token = localStorage.getItem("token");
     const url = `/budget/${fillter === 0 ? `active/${budgettype}` : `${budgettype}`}`;
@@ -131,15 +141,15 @@ function Requests({ budgettype }) {
                   </IconButton>
                 ) : null}
                 {fillter === 0 ? (
-                  <IconButton color="primary" onClick={() => onView(x)}>
+                  <IconButton color="primary" onClick={() => onReject(x)}>
                     <Icon>thumb_down</Icon>
                   </IconButton>
                 ) : null}
               </>
             ),
             typeName: budgetTypes[x.Type - 1],
-            BudgetFromformated: formatNumberWithSlashes(x.BudgetFrom),
-            BudgetToformated: formatNumberWithSlashes(x.BudgetTo),
+            BudgetFromformated: formatDateString(x.BudgetFrom),
+            BudgetToformated: formatDateString(x.BudgetTo),
           };
 
           // Push the transformed object to the userlist array
@@ -154,8 +164,10 @@ function Requests({ budgettype }) {
   }
   const onView = async (value) => {
     try {
+      const token = localStorage.getItem("token");
+
       const pdf = await api.get(`/pdf/generate-pdf/${value.RequestID}`, {
-        headers: { "Content-Type": "application/pdf" },
+        headers: { "Content-Type": "application/pdf", Authorization: `Bearer ${token}` },
         responseType: "arraybuffer",
       });
 
@@ -177,7 +189,7 @@ function Requests({ budgettype }) {
   const onNextStep = async (type, requestId) => {
     const token = localStorage.getItem("token");
     await api
-      .get(`/budget/nextauth/${type}`, {
+      .get(`/budget/nextauth/${type}/${requestId}`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -193,15 +205,19 @@ function Requests({ budgettype }) {
         console.error("Error deleting user:", error);
       });
   };
-
+  const onReject = async (value) => {
+    console.log(value);
+    setOpen(true);
+    setSelectedRequest(value.RequestID);
+    setIsReject(true);
+  };
   const handleAdminChoice = (value) => {
+    setIsReject(false);
     setOpen(value);
   };
-
   const handleClose = () => {
     setOpen(false);
   };
-
   const onSubmit = async (data) => {
     const token = localStorage.getItem("token");
 
@@ -311,11 +327,12 @@ function Requests({ budgettype }) {
                 columns: [
                   { Header: "RequestID", accessor: "RequestID", width: "25%" },
                   { Header: "Budget Type", accessor: "typeName", width: "25%" },
-                  { Header: "FromDep", accessor: "BudgetFromformated", width: "20%" },
-                  { Header: "ToDep", accessor: "BudgetToformated", width: "20%" },
+                  { Header: "FromCapital", accessor: "BudgetFromformated", width: "20%" },
+                  { Header: "ToCapital", accessor: "BudgetToformated", width: "20%" },
                   { Header: "Date", accessor: "ChangeDate", width: "20%" },
                   { Header: "Amount", accessor: "Amount", width: "20%" },
                   { Header: "State", accessor: "NewState", width: "25%" },
+                  { Header: "Comment", accessor: "comments", width: "25%" },
                   { Header: "option", accessor: "option", width: "20%" },
                 ],
                 rows: [...users],
@@ -335,6 +352,7 @@ function Requests({ budgettype }) {
         adminUsers={adminUsers}
         selectedRequest={selectedRequest}
         fetchData={fetchData}
+        reject={reject}
       />
       {renderErrorSB}
       {renderSuccessSB}

@@ -42,20 +42,54 @@ dependencies:
   firebase_messaging: ^14.7.0
   awesome_notifications: ^0.8.2
   url_launcher: ^6.0.13
+  auto_updater: ^0.1.7
   # Icons
+  syncfusion_flutter_pdfviewer: ^24.1.47
   material_design_icons_flutter: 5.0.6996
   flutter_feather_icons: ^2.0.0+1
   lucide_icons: ^0.257.0
+  ethiopian_calendar: ^0.0.2
   loading_animation_widget: ^1.2.0+4
+  flutter_pdfview: ^1.2.7
+  animated_tree_view: ^2.2.0
   intl: ^0.18.1
   dotted_border: ^2.1.0
+  flutter_intro: ^3.0.3
   cunning_document_scanner: ^1.1.2
+  mime: ^1.0.0
   http: ^1.1.0
   flutter_secure_storage: ^9.0.0
-  syncfusion_flutter_signaturepad: ^23.1.39
+  syncfusion_flutter_signaturepad: ^24.1.47
+  graphic: ^2.2.1
+  file_picker: ^6.1.1
+  device_info_plus: ^9.1.1
+  flutter_form_builder: ^9.1.1
+  image_picker: ^1.0.4
+  table_calendar: ^3.0.9
+  pdf: ^3.10.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: "^0.13.1"
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo.jpg"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  web:
+    generate: true
+    image_path: "assets/logo.jpg"
+    background_color: "#hexcode"
+    theme_color: "#hexcode"
+  windows:
+    generate: true
+    image_path: "assets/logo.jpg"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/logo.jpg"
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -76,171 +110,11 @@ flutter:
   uses-material-design: true
 
   assets:
-
-    # Map Styles
-    - assets/map/
-
-    # Profiles
-    - assets/images/profile/
-
     # logo
     - assets/logo.jpg
 
-    # Shopping
-    - assets/images/apps/shopping/
-    - assets/images/apps/shopping/product/
-    - assets/images/apps/shopping/offer/
-    - assets/images/apps/shopping/camera/
-    - assets/images/apps/shopping/vector/
-
-    # Shopping2
-    - assets/images/apps/shopping2/icons/
-    - assets/images/apps/shopping2/images/
-
-    # Brand
-    - assets/brand/
-
-    # Hotel
-    - assets/images/apps/hotel/
-
-    # Places
-    - assets/images/place/
-
-    # Music
-    - assets/images/apps/music/
-
-    # Food
-    - assets/images/apps/food/
-
-    # Estate
-    - assets/images/apps/estate/
-
-    # Course
-    - assets/images/apps/course/
-
-    # Chat
-    - assets/images/apps/chat/
-
-    # Social
-    - assets/images/apps/social/
-
-    # Other
-    - assets/images/all/
-
-    # Event
-    - assets/images/apps/event/
-
-    # Avatars
-    - assets/images/profile/
-
-    ###################---------------------- Full Apps -------------------------#################
-
-    ## Animations
-
-    # Shopping
-    # Shopping Manager
-    - assets/full_apps/animations/shopping/data/
-    - assets/images/full_apps/shopping/
-    - assets/images/full_apps/shopping/icons/
-    - assets/full_apps/animations/shopping_manager/data/
-
-    # Rental Service
-    - assets/full_apps/animations/rental_service/data/
-    - assets/images/full_apps/rental_service/images/
-    - assets/images/full_apps/rental_service/icons/
-
-    # NFT
-    - assets/full_apps/animations/nft/data/
-    - assets/images/full_apps/nft/images/
-    - assets/images/full_apps/nft/icons/
-
-
-    ## m3
-
-    # Cookify
-    - assets/full_apps/m3/cookify/data/
-
-    # Dating
-    - assets/full_apps/m3/dating/data/
-
-    # Estate
-    - assets/full_apps/m3/estate/data/
-
-    # HomeMade
-    - assets/full_apps/m3/homemade/data/
-
-    # Learning
-    - assets/full_apps/m3/learning/data/
-
-    # Plant
-    - assets/images/full_apps/plant/images/
-    - assets/full_apps/animations/plant/data/
-
-
-
-    ## Other
-
-    # Dating
-    - assets/full_apps/others/dating/data/
-
-    # Fitness
-    - assets/images/apps/fitness/images/
-    - assets/full_apps/others/fitness/data/
-
-    # HomeMade
-    - assets/full_apps/others/homemade/data/
-
-    # Muvi
-    - assets/full_apps/others/muvi/data/
-
-
-    ###################---------------------- Custom Apps -------------------------#################
-
-    # Grocery
-    - assets/images/apps/grocery/
-
-
-    # Homemade
-    - assets/images/apps/homemade/
-    - assets/images/apps/homemade/products/
-    - assets/images/apps/homemade/category/
-    - assets/images/apps/homemade/shop/
-
-    # Dating
-    - assets/images/apps/dating/
-
-    # Muvi
-    - assets/images/apps/muvi/
-
-    # CustomApps
-    - assets/images/apps/cookify/
-    - assets/images/apps/grocery/
-    - assets/images/apps/medicare/
-
-    # Learning  (Material Design 3)
-    - assets/images/apps/learning/images/
-    - assets/images/apps/learning/icons/
-
-    # Illustration
-    - assets/illustration/food/
-    - assets/illustration/shopping/
-    - assets/illustration/hotel/
-    - assets/illustration/music/
-
-    # Month backgrounds
-    - assets/images/month_background/
-
-    # Languages
-    - assets/lang/
-
-    # Icons
-    - assets/icons/
-
-    # Rive Animations
-    - assets/animations/rive/
-
-    # Other
-    - assets/other/
+    # placeholder
+    - assets/profile.jpg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

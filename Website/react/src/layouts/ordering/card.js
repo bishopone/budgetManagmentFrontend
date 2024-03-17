@@ -7,23 +7,23 @@ import * as React from "react";
 // import AspectRatio from "@mui/material/AspectRatio";
 import TimelineItem from "examples/Timeline/TimelineItem";
 import api from "../../api";
-
-import Link from "@mui/material/Link";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Chip from "@mui/material/Chip";
-import Typography from "@mui/material/Typography";
 import MDBox from "components/MDBox";
-import CardMedia from "@mui/material/CardMedia";
 import MDButton from "components/MDButton/index.js";
 import MDAvatar from "components/MDAvatar/index.js";
+import Checkbox from "@mui/material/Checkbox";
+import FormGroup from "@mui/material/FormGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormControl from "@mui/material/FormControl";
+import FormLabel from "@mui/material/FormLabel";
+import MDTypography from "components/MDTypography/index.js";
 const style = {
   padding: "0.5rem 1rem",
   marginBottom: ".5rem",
   backgroundColor: "white",
   cursor: "move",
 };
-export const Container = ({ id, text, index, moveCard, fetchData, handleEdit, users }) => {
+export const Container = ({ index, moveCard, fetchData, handleEdit, card }) => {
+  const { AuthorityID, AuthorityName, child, type, cansign, canstamp, canTiter } = card;
   const ref = useRef(null);
   const [{ handlerId }, drop] = useDrop({
     accept: ItemTypes.CARD,
@@ -73,7 +73,7 @@ export const Container = ({ id, text, index, moveCard, fetchData, handleEdit, us
   const [{ isDragging }, drag] = useDrag({
     type: ItemTypes.CARD,
     item: () => {
-      return { id, index };
+      return { AuthorityID, index };
     },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
@@ -81,32 +81,58 @@ export const Container = ({ id, text, index, moveCard, fetchData, handleEdit, us
   });
   const opacity = isDragging ? 0 : 1;
   drag(drop(ref));
-  const onDelete = async (id) => {
+  const onDelete = async (AuthorityID) => {
     const token = localStorage.getItem("token");
     await api
-      .delete(`/authority/${id}`, {
+      .delete(`/authority/${AuthorityID}`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       })
-      .then((response) => {
+      .then(() => {
+        fetchData();
+      })
+      .catch((error) => {
+        console.error("Error fetching child:", error);
+      });
+  };
+  const onStatusChange = async (AuthorityID, value) => {
+    console.log(AuthorityID, value.target.name);
+    const token = localStorage.getItem("token");
+    console.log(value);
+    await api
+      .put(
+        `/authority/status/${AuthorityID}`,
+        { name: value.target.name, value: value.target.checked },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      .then(() => {
         fetchData();
       })
       .catch((error) => {
         console.error("Error fetching users:", error);
       });
   };
-  console.log(users);
   return (
     <div ref={ref} style={{ ...style, opacity }} data-handler-id={handlerId}>
-      <TimelineItem color="success" icon="arrow_downward" title={text} badges={["design"]} />
+      <TimelineItem
+        color="success"
+        icon="arrow_downward"
+        title={AuthorityName}
+        badges={["design"]}
+      />
       <MDBox display="flex">
-        {users.map((user) => (
+        {child.map((user) => (
           <>
             <MDAvatar
               padding="5px"
-              src={user.ProfilePictureLink}
+              src={`${api.getUri()}/${user.ProfilePictureLink}`}
               alt="name"
               variant="square"
               size="md"
@@ -114,18 +140,49 @@ export const Container = ({ id, text, index, moveCard, fetchData, handleEdit, us
             {user.UserName}
           </>
         ))}
+        <MDTypography>{type}</MDTypography>
       </MDBox>
       <MDButton
-        onClick={() => handleEdit(text, id)}
+        onClick={() => handleEdit(AuthorityName, AuthorityID)}
         sx={{ m: 2 }}
         variant="gradient"
         color="warning"
       >
         Edit
       </MDButton>
-      <MDButton onClick={() => onDelete(id)} sx={{ m: 2 }} variant="gradient" color="error">
+      <MDButton
+        onClick={() => onDelete(AuthorityID)}
+        sx={{ m: 2 }}
+        variant="gradient"
+        color="error"
+      >
         delete
       </MDButton>
+      <FormControl component="fieldset">
+        <FormGroup aria-label="position">
+          <FormControlLabel
+            onChange={(value) => onStatusChange(AuthorityID, value)}
+            checked={cansign}
+            control={<Checkbox />}
+            label="Can Sign"
+            name="cansign"
+          />
+          <FormControlLabel
+            onChange={(value) => onStatusChange(AuthorityID, value)}
+            checked={canstamp}
+            control={<Checkbox />}
+            label="Can Stamp"
+            name="canstamp"
+          />
+          <FormControlLabel
+            onChange={(value) => onStatusChange(AuthorityID, value)}
+            checked={canTiter}
+            control={<Checkbox />}
+            label="Can Titer"
+            name="canTiter"
+          />
+        </FormGroup>
+      </FormControl>
     </div>
   );
 };

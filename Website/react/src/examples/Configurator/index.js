@@ -28,6 +28,7 @@ import MDButton from "components/MDButton";
 
 // Custom styles for the Configurator
 import ConfiguratorRoot from "examples/Configurator/ConfiguratorRoot";
+import LanguageSwitcher from "examples/Language/LanguageSwitcher";
 
 // Material Dashboard 2 React context
 import {
@@ -277,6 +278,7 @@ function Configurator() {
           <Switch checked={darkMode} onChange={handleDarkMode} />
         </MDBox>
         <Divider />
+        <LanguageSwitcher />
       </MDBox>
     </ConfiguratorRoot>
   );

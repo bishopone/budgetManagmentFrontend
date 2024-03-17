@@ -1,18 +1,3 @@
-/**
-=========================================================
-* Material Dashboard 2  React - v2.2.0
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/material-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
 import { useMemo } from "react";
 
 // porp-types is a library for typechecking of props
@@ -46,7 +31,17 @@ import colors from "assets/theme/base/colors";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+const { gradients, dark } = colors;
+
 function VerticalBarChart({ icon, title, description, height, chart }) {
+  const backgroundColors = [dark.main];
+  const colors = ["info", "primary", "dark", "secondary", "primary"];
+  colors.forEach((color) =>
+    gradients[color]
+      ? backgroundColors.push(gradients[color].state)
+      : backgroundColors.push(dark.main)
+  );
+
   const chartDatasets = chart.datasets
     ? chart.datasets.map((dataset) => ({
         ...dataset,
@@ -55,14 +50,12 @@ function VerticalBarChart({ icon, title, description, height, chart }) {
         borderRadius: 4,
         backgroundColor: colors[dataset.color]
           ? colors[dataset.color || "dark"].main
-          : colors.dark.main,
-        fill: false,
+          : backgroundColors,
+        fill: true,
         maxBarThickness: 35,
       }))
     : [];
-
   const { data, options } = configs(chart.labels || [], chartDatasets);
-
   const renderChart = (
     <MDBox py={2} pr={2} pl={icon.component ? 1 : 2}>
       {title || description ? (
@@ -98,7 +91,7 @@ function VerticalBarChart({ icon, title, description, height, chart }) {
       {useMemo(
         () => (
           <MDBox height={height}>
-            <Bar data={data} options={options} redraw />
+            <Bar data={data} options={options} />
           </MDBox>
         ),
         [chart, height]

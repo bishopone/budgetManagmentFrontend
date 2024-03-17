@@ -26,8 +26,11 @@ import Icon from "@mui/material/Icon";
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
+import { useTranslation } from "react-i18next";
 
 function Breadcrumbs({ icon, title, route, light }) {
+  const { t } = useTranslation();
+
   const routes = route.slice(0, -1);
 
   return (
@@ -68,21 +71,14 @@ function Breadcrumbs({ icon, title, route, light }) {
         <MDTypography
           variant="button"
           fontWeight="regular"
-          textTransform="capitalize"
           color={light ? "white" : "dark"}
           sx={{ lineHeight: 0 }}
         >
-          {title.replace("-", " ")}
+          {t(title.replace("-", " ").charAt(0).toUpperCase() + title.replace("-", " ").slice(1))}
         </MDTypography>
       </MuiBreadcrumbs>
-      <MDTypography
-        fontWeight="bold"
-        textTransform="capitalize"
-        variant="h6"
-        color={light ? "white" : "dark"}
-        noWrap
-      >
-        {title.replace("-", " ")}
+      <MDTypography fontWeight="bold" variant="h6" color={light ? "white" : "dark"} noWrap>
+        {t(title.replace("-", " ").charAt(0).toUpperCase() + title.replace("-", " ").slice(1))}
       </MDTypography>
     </MDBox>
   );

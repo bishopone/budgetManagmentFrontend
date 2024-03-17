@@ -11,7 +11,6 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config.dart';
@@ -37,16 +36,23 @@ class HealthScheduleScreen extends StatefulWidget {
 class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
   Future<List<BudgetRequest>> fetchBudgetRequest() async {
     try {
+      const secureStorage = FlutterSecureStorage();
+      final token = await secureStorage.read(key: "token");
+      final headers = {
+        "Content-Type": "application/json",
+        'Authorization': 'Bearer $token',
+      };
       const storage = FlutterSecureStorage();
       final user = await storage.read(key: 'user');
       final decodeduser = jsonDecode(user!);
       final appConfig = AppConfigProvider.of(context)?.appConfig;
       final response = await http.get(Uri.parse(
-          '${appConfig?.apiBaseUrl}/budget/request/${decodeduser['UserID']}'));
+          '${appConfig?.apiBaseUrl}/budget/request/${decodeduser['UserID']}'),headers:headers);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data.isNotEmpty) {
-          return BudgetRequest.fromJsonList(data);
+          final List<BudgetRequest> budgetrequests  = BudgetRequest.fromJsonList(data);
+          return budgetrequests.reversed.toList();
         } else {
           throw Exception(
               'No data available for Request ID ${decodeduser['UserID']}');
@@ -62,8 +68,14 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
 
   Future<List<BudgetLog>> fetchBudgetLogs(int requestID) async {
     final appConfig = AppConfigProvider.of(context)?.appConfig;
+    const secureStorage = FlutterSecureStorage();
+    final token = await secureStorage.read(key: "token");
+    final headers = {
+      "Content-Type": "application/json",
+      'Authorization': 'Bearer $token',
+    };
     final response = await http
-        .get(Uri.parse('${appConfig?.apiBaseUrl}/budget/logs/$requestID'));
+        .get(Uri.parse('${appConfig?.apiBaseUrl}/budget/logs/$requestID'),headers: headers);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -76,26 +88,22 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
 
   Future<void> onView(String requestId) async {
     final appConfig = AppConfigProvider.of(context)?.appConfig;
+    const secureStorage = FlutterSecureStorage();
+    final token = await secureStorage.read(key: "token");
+    final headers = {
+      "Content-Type": "application/json",
+      'Authorization': 'Bearer $token',
+    };
     print(requestId);
     final url = Uri.parse(
-        "${appConfig?.apiBaseUrl}/pdf/generate-pdf/$requestId"); // Replace with your server URL
+        "${appConfig?.apiBaseUrl}/pdf/generate-pdf/$requestId?token=$token"); // Replace with your server URL
 
     try {
       if (!await canLaunchUrl(url)) {
         throw Exception('Could not launch $url');
       }
       await launchUrl(url);
-      //
-      // final response = await http.get(url);
-      // print(response.bodyBytes);
-      // if (response.statusCode == 200) {
-      //   final Uint8List data = response.bodyBytes;
-      //
-      //   // Open the PDF using url_launcher
-      //   await launchInBrowser(data);
-      // } else {
-      //   throw Exception('Failed to load PDF');
-      // }
+
     } catch (error) {
       print('Error: $error');
     }
@@ -114,8 +122,7 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
   @override
   void initState() {
     super.initState();
-    // customTheme = AppTheme.customTheme;
-    // theme = AppTheme.theme;
+
     DateTime now = DateTime.now();
     dayOfMonth = now.day;
     dayOfWeek = DateFormat('EEEE').format(now);
@@ -247,7 +254,7 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
                         return Container(
                           margin: MySpacing.fromLTRB(8, 0, 8, 8),
                           child: ListView.builder(
-                            physics: NeverScrollableScrollPhysics(),
+                            // physics: NeverScrollableScrollPhysics(),
                             scrollDirection: Axis.vertical,
                             itemCount: snapshot.data!.length,
                             itemBuilder: (context, index) {
@@ -255,12 +262,16 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
                               DateTime date = DateTime.parse(
                                   data.changeDate.toIso8601String());
                               String formattedDate = formatter.format(date);
+                              print("data");
+                              print(data.comment);
                               return singleActivityWidget(
                                   imgdata: data.ProfilePictureLink,
                                   time: formattedDate,
                                   editorname: data.changedByUserName,
                                   editedcase: data.newState,
-                                  phonenumber: data.PhoneNumber);
+                                  phonenumber: data.PhoneNumber,
+                                  isreject:data.comment
+                              );
                             },
                           ),
                         );
@@ -341,68 +352,90 @@ class _HealthScheduleScreenState extends State<HealthScheduleScreen> {
       required String imgdata,
       required String editedcase,
       required String editorname,
+      required String? isreject,
       required String phonenumber}) {
+    final appConfig = AppConfigProvider.of(context)?.appConfig;
+
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: Row(
+      child: Column(
         children: [
-          SizedBox(
-              width: 72,
-              child: MyText.bodySmall(
-                time,
-                muted: true,
-                letterSpacing: 0,
-              )),
-          Expanded(
-            child: MyContainer(
-              width: double.infinity,
-              padding: MySpacing.all(12),
-              borderRadiusAll: 4,
-              child: Row(
-                children: [
-                  Container(
-                    // padding: MySpacing.all(8),
-                    decoration: const BoxDecoration(
-                        borderRadius: BorderRadius.all(Radius.circular(4))),
-                    child: Image(
-                      image: NetworkImage(imgdata == ""
-                          ? "https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?w=740&t=st=1696599824~exp=1696600424~hmac=b1c23d7d66b5cd491fb7031a390d1f991a24ba0a03304ff2acfda8b3c4cddf0b"
-                          : imgdata),
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                    ),
+          Row(
+            children: [
+              SizedBox(
+                  width: 72,
+                  child: MyText.bodySmall(
+                    time,
+                    muted: true,
+                    letterSpacing: 0,
+                  )),
+              Expanded(
+                child: MyContainer(
+                  width: double.infinity,
+                  padding: MySpacing.all(12),
+                  borderRadiusAll: 4,
+                  child: Row(
+                    children: [
+                      Container(
+                        // padding: MySpacing.all(8),
+                        decoration: const BoxDecoration(
+                            borderRadius: BorderRadius.all(Radius.circular(4))),
+                        child: Image(
+                          image: NetworkImage("${appConfig?.apiBaseUrl}/${imgdata}"),
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Handle the error here
+                            print("Error loading image: $error");
+                            return Image.asset(
+                              'assets/profile.jpg', // Replace with the path to your asset image
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 5,
+                        width: 5,
+                      ),
+                      Expanded(
+                        // margin: MySpacing.left(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            MyText.bodyMedium(editedcase,
+                                overflow: TextOverflow.fade,
+                                color: theme.colorScheme.onBackground,
+                                fontWeight: 600),
+                            MyText.bodySmall(editorname,
+                                fontSize: 12,
+                                color: theme.colorScheme.onBackground,
+                                fontWeight: 500,
+                                muted: true),
+                            MyText.bodySmall(phonenumber,
+                                fontSize: 12,
+                                color: theme.colorScheme.onBackground,
+                                fontWeight: 500,
+                                muted: true),
+                          ],
+
+                        ),
+
+                      )
+                    ],
                   ),
-                  const SizedBox(
-                    height: 5,
-                    width: 5,
-                  ),
-                  Expanded(
-                    // margin: MySpacing.left(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        MyText.bodyMedium(editedcase,
-                            overflow: TextOverflow.fade,
-                            color: theme.colorScheme.onBackground,
-                            fontWeight: 600),
-                        MyText.bodySmall(editorname,
-                            fontSize: 12,
-                            color: theme.colorScheme.onBackground,
-                            fontWeight: 500,
-                            muted: true),
-                        MyText.bodySmall(phonenumber,
-                            fontSize: 12,
-                            color: theme.colorScheme.onBackground,
-                            fontWeight: 500,
-                            muted: true),
-                      ],
-                    ),
-                  )
-                ],
-              ),
-            ),
-          )
+                ),
+              )
+            ],
+          ),
+          if(isreject != null && editedcase == "The Request Has Been Rejected")
+            MyText.bodyMedium(isreject,
+                overflow: TextOverflow.fade,
+                color: theme.colorScheme.onBackground,
+                fontWeight: 600),
         ],
       ),
     );

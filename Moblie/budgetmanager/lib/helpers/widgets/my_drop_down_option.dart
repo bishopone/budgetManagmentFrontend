@@ -1,11 +1,13 @@
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
+
 class DropDownOption extends StatelessWidget {
-  const DropDownOption({Key? key,
-    required this.selectedOption,
-    required this.setSelectedOption,
-    required this.description,
-    required this.fetchFunction})
+  const DropDownOption(
+      {Key? key,
+      required this.selectedOption,
+      required this.setSelectedOption,
+      required this.description,
+      required this.fetchFunction})
       : super(key: key);
   final String description;
   final String selectedOption;
@@ -20,12 +22,13 @@ class DropDownOption extends StatelessWidget {
         children: [
           DropdownSearch<String>(
             onChanged: (x) => setSelectedOption(x!),
+            selectedItem: selectedOption,
             dropdownDecoratorProps: DropDownDecoratorProps(
                 dropdownSearchDecoration: InputDecoration(
                     label: Text(
-                      description,
-                      style: const TextStyle(color: Colors.black),
-                    ))),
+              description,
+              style: const TextStyle(color: Colors.black),
+            ))),
             asyncItems: fetchFunction,
             popupProps: PopupProps.menu(
               showSearchBox: true,

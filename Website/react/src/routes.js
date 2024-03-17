@@ -38,26 +38,25 @@ Coded by www.creative-tim.com
 // Material Dashboard 2 React layouts
 import Dashboard from "layouts/dashboard";
 import Analytics from "layouts/analytics";
-import Documents from "layouts/documents";
 import Users from "layouts/users";
 import NormalRequests from "layouts/request/normal request";
 import CapitalRequests from "layouts/request/capital request";
-import InternalRequests from "layouts/request/internal request";
+import CapitalOwnRequests from "layouts/request/capital other request";
 import TreasuryRequests from "layouts/request/treasury request";
 import TreasuryManagment from "layouts/trasury managment/index";
 import App from "layouts/ordering";
 import Permission from "layouts/permissions";
 import Departments from "layouts/departments";
-import Search from "layouts/search";
-import Notifications from "layouts/notifications";
+import Devices from "layouts/devices";
+import RequiredDocuments from "layouts/required documents";
 import Profile from "layouts/profile";
-import Details from "layouts/details";
-import Share from "layouts/share";
 import UserForm from "layouts/users/components/userform";
 import SignIn from "layouts/authentication/sign-in";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
+import Language from "layouts/language";
+
 const isAuthenticated = localStorage.getItem("token");
 const routes = [
   {
@@ -67,46 +66,74 @@ const routes = [
     icon: <Icon fontSize="small">dashboard</Icon>,
     route: "/dashboard",
     component: <Dashboard />,
+    permission: "AccessDashboard",
   },
   {
     type: "collapse",
-    name: "Normal Budget",
-    key: "normal",
+    name: "Language",
+    key: "language",
+    icon: <Icon fontSize="small">language</Icon>,
+    route: "/language",
+    component: <Language />,
+    permission: "AccessLanguage",
+  },
+  {
+    type: "collapse",
+    name: "Recurrent Budget",
+    key: "recurrent",
+    typename: "Recurrent Budget",
     icon: <Icon fontSize="small">paid</Icon>,
-    route: "/normal",
+    route: "/recurrent",
     component: <NormalRequests budgettype="1" />,
+    permission: "AccessRecurrent",
   },
   {
     type: "collapse",
     name: "Capital Budget",
     key: "capital",
+    typename: "Capital Own Budget",
     icon: <Icon fontSize="small">location_city</Icon>,
     route: "/capital",
     component: <CapitalRequests budgettype="2" />,
+    permission: "AccessCapital",
   },
   {
     type: "collapse",
-    name: "Treasury Budget",
-    key: "treasury",
+    name: "Capital Other Budget",
+    key: "other-capital",
+    typename: "Capital Other Budget",
+    icon: <Icon fontSize="small">domain_add</Icon>,
+    route: "/other-capital",
+    component: <CapitalOwnRequests budgettype="5" />,
+    permission: "AccessCapitalOther",
+  },
+  {
+    type: "collapse",
+    name: "Contingency Budget",
+    typename: "Contingency Budget",
+    key: "contingency",
     icon: <Icon fontSize="small">account_balance</Icon>,
-    route: "/treasury",
+    route: "/contingency",
     component: <TreasuryRequests budgettype="3" />,
+    permission: "AccessContingency",
   },
   {
     type: "collapse",
-    name: "Internal Budget",
-    key: "internal",
-    icon: <Icon fontSize="small">wallet</Icon>,
-    route: "/internal",
-    component: <InternalRequests budgettype="4" />,
+    name: "Analytics",
+    key: "analytics",
+    icon: <Icon fontSize="small">analytics</Icon>,
+    route: "/analytics",
+    component: <Analytics />,
+    permission: "AccessAnalytics",
   },
   {
     type: "collapse",
-    name: "Treasury Managment",
-    key: "trasury-managment",
+    name: "Contingency Managment",
+    key: "contingency-managment",
     icon: <Icon fontSize="small">account_balance_wallet</Icon>,
-    route: "/trasury-managment",
+    route: "/contingency-managment",
     component: <TreasuryManagment />,
+    permission: "AccessContingencyManagment",
   },
   {
     type: "internal",
@@ -118,35 +145,57 @@ const routes = [
   },
   {
     type: "collapse",
-    name: "User Managment",
+    name: "Users",
     key: "users",
     icon: <Icon fontSize="small">group</Icon>,
     route: "/users",
     component: <Users />,
+    permission: "AccessUserManagment",
   },
   {
     type: "collapse",
-    name: "Authority Managment",
+    name: "Authority",
     key: "authority",
     icon: <Icon fontSize="small">list_alt</Icon>,
     route: "/authority",
     component: <App />,
+    permission: "AccessAuthorityManagment",
   },
-  // {
-  //   type: "collapse",
-  //   name: "Permission Managment",
-  //   key: "permissions",
-  //   icon: <Icon fontSize="small">shield</Icon>,
-  //   route: "/permissions",
-  //   component: <Permission />,
-  // },
   {
     type: "collapse",
-    name: "Departments Managment",
+    name: "Permissions",
+    key: "permissions",
+    icon: <Icon fontSize="small">shield</Icon>,
+    route: "/permissions",
+    component: <Permission />,
+    permission: "AccessPermissionManagment",
+  },
+  {
+    type: "collapse",
+    name: "Departments",
     key: "departments",
     icon: <Icon fontSize="small">grading</Icon>,
     route: "/departments",
     component: <Departments />,
+    permission: "AccessDepartmentsManagment",
+  },
+  {
+    type: "collapse",
+    name: "Devices",
+    key: "devices",
+    icon: <Icon fontSize="small">devices</Icon>,
+    route: "/devices",
+    component: <Devices />,
+    permission: "devicesManagment",
+  },
+  {
+    type: "collapse",
+    name: "RequiredDocuments",
+    key: "requiredDocuments",
+    icon: <Icon fontSize="small">document_scanner</Icon>,
+    route: "/requiredDocuments",
+    component: <RequiredDocuments />,
+    permission: "requiredDocuments",
   },
   {
     type: "collapse",
@@ -155,14 +204,16 @@ const routes = [
     icon: <Icon fontSize="small">person</Icon>,
     route: "/profile",
     component: <Profile />,
+    permission: "AccessProfile",
   },
   {
     type: "collapse",
-    name: "logout",
+    name: "Logout",
     key: "logout",
     icon: <Icon fontSize="small">{isAuthenticated ? "logout" : "login"}</Icon>,
-    route: "/authentication/sign-in",
+    route: "/sign-in",
     component: <SignIn />,
+    permission: "Accesslogout",
   },
 ];
 

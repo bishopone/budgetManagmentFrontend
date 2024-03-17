@@ -25,12 +25,13 @@ import Footer from "examples/Footer";
 import DataTable from "examples/Tables/DataTable";
 import UserForm from "./components/userform";
 import IconButton from "@mui/material/IconButton";
-
+import ModalContent from "./components/modal";
 import { useNavigate } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import api from "../../api";
 import MDTypography from "components/MDTypography";
 import MDSnackbar from "components/MDSnackbar";
+import { useFetchData } from "./api.js";
 
 import MDButton from "components/MDButton";
 import { Modal, Backdrop, Fade, Box } from "@mui/material";
@@ -46,18 +47,23 @@ const style = {
   px: 4,
   pb: 3,
 };
+
 function Users() {
   const navigate = useNavigate();
+  const { data, isLoading, isError, error } = useFetchData();
   const isAuthenticated = localStorage.getItem("token");
   if (!isAuthenticated) {
-    navigate("/authentication/sign-in");
+    navigate("/sign-in");
     return null;
   }
   const [menu, setMenu] = useState("All");
 
   const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [open, setOpen] = useState(false);
+  const [stampOpen, setStampOpen] = useState(false);
   const [image, setImage] = useState("false");
+  const [deleteId, setDeleteId] = useState("");
   const [selectedUser, setSelectedUser] = useState({});
   const [errorSB, setErrorSB] = useState(false);
   const [message, setMessage] = useState("");
@@ -68,57 +74,108 @@ function Users() {
   const closeSuccessSB = () => setSuccessSB(false);
 
   useEffect(() => {
-    async function fetchData() {
-      const token = localStorage.getItem("token");
-      await api
-        .get("/users/", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        .then((response) => {
-          const userlist = [];
-          response.data.forEach((x) => {
-            const transformedUser = {
-              ...x,
-              ProfilePicture: (
+    fetchData();
+  }, []);
+
+  async function fetchData() {
+    const token = localStorage.getItem("token");
+    await api
+      .get("/users/", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((response) => {
+        console.log(response);
+        const userlist = [];
+        response.data.forEach((x) => {
+          const transformedUser = {
+            ...x,
+            ProfilePicture: (
+              <MDAvatar
+                src={`${api.getUri()}/${x.ProfilePictureLink}`}
+                alt="name"
+                variant="square"
+                size="md"
+                onClick={(e) => handleImage(`${api.getUri()}/${x.ProfilePictureLink}`)}
+              />
+            ),
+            Stamp:
+              x.Stamp !== null ? (
                 <MDAvatar
-                  src={x.ProfilePictureLink}
+                  src={`${api.getUri()}/${x.Stamp}`}
                   alt="name"
                   variant="square"
                   size="md"
-                  onClick={(e) => handleImage(x.ProfilePictureLink)}
+                  onClick={(e) => handleImage(`${api.getUri()}/${x.Stamp}`, x.StampID)}
                 />
-              ),
-              option: (
-                <>
-                  <IconButton color="warning" onClick={() => onEdit(x)}>
-                    <Icon>edit</Icon>
-                  </IconButton>
-                  <IconButton color="primary" onClick={() => onDelete(x.UserID)}>
-                    <Icon>delete</Icon>
-                  </IconButton>
-                </>
-              ),
-            };
-
-            // Push the transformed object to the userlist array
-            userlist.push(transformedUser);
-          });
-          console.log(typeof userlist);
-          setUsers(userlist);
-        })
-        .catch((error) => {
-          console.error("Error fetching users:", error);
+              ) : null,
+            Signature:
+              x.Signature !== null ? (
+                <MDAvatar
+                  src={`${api.getUri()}/${x.Signature}`}
+                  alt="name"
+                  variant="square"
+                  size="md"
+                  onClick={(e) => handleImage(`${api.getUri()}/${x.Signature}`, x.SignatureID)}
+                />
+              ) : null,
+            Titer:
+              x.Titer !== null ? (
+                <MDAvatar
+                  src={`${api.getUri()}/${x.Titer}`}
+                  alt="name"
+                  variant="square"
+                  size="md"
+                  onClick={(e) => handleImage(`${api.getUri()}/${x.Titer}`, x.TiterID)}
+                />
+              ) : null,
+            option: (
+              <>
+                <IconButton color="warning" onClick={() => onEdit(x)}>
+                  <Icon>edit</Icon>
+                </IconButton>
+                <IconButton color="primary" onClick={() => onDelete(x.UserID)}>
+                  <Icon>delete</Icon>
+                </IconButton>
+                <IconButton color="primary" onClick={() => handleStamps(x.UserID)}>
+                  <Icon>approval</Icon>
+                </IconButton>
+              </>
+            ),
+          };
+          // Push the transformed object to the userlist array
+          userlist.push(transformedUser);
         });
-    }
-    fetchData();
-  }, []);
+        setUsers(userlist);
+      })
+      .catch((error) => {
+        console.error("Error fetching users:", error);
+      });
+    await api
+      .get("/roles/", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((response) => {
+        setRoles(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching users:", error);
+      });
+  }
 
   const onEdit = (value) => {
     setSelectedUser(value);
     setMenu("Edit");
+  };
+  const handleStamps = (value) => {
+    setStampOpen(true);
+    setSelectedUser(value);
+    // setMenu("Edit");
   };
   const onDelete = async (value) => {
     const token = localStorage.getItem("token");
@@ -130,16 +187,11 @@ function Users() {
         },
       })
       .then((response) => {
-        console.log("user");
         setMessage(response.data.message);
         setUsers((prev) => {
           const filteredUsers = prev.filter((user) => {
-            console.log(user["UserID"]);
-            console.log(response.data.userId);
-            console.log(parseInt(user["UserID"]) !== parseInt(response.data.userId));
             return parseInt(user["UserID"]) !== parseInt(response.data.userId);
           });
-          console.log(filteredUsers);
           return filteredUsers;
         });
         openSuccessSB(true);
@@ -150,31 +202,65 @@ function Users() {
         openErrorSB(true);
       });
   };
-  const handleImage = (value) => {
+  const handleImage = (value, id) => {
     setImage(value);
     setOpen(true);
+    setDeleteId(id);
+  };
+  const getAllusers = () => {
+    return users;
   };
 
   const handleClose = () => {
     setOpen(false);
   };
 
-  const onSubmit = async (data) => {
+  const handleDelete = async () => {
+    if (deleteId === "") {
+      return;
+    }
     const token = localStorage.getItem("token");
 
+    await api
+      .delete(`/signiture/${deleteId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then(() => {
+        setMessage("success");
+        openSuccessSB(true);
+      })
+      .catch((error) => {
+        console.error("Error deleting signiture or stamp:", error);
+        setMessage(error.response.data.error);
+        openErrorSB(true);
+      });
+  };
+
+  const onSubmit = async (data, image) => {
+    const token = localStorage.getItem("token");
+
+    // Create FormData object
+    const formData = new FormData();
+
+    // Append data fields to FormData
+    Object.keys(data).forEach((key) => {
+      formData.append(key, data[key]);
+    });
+
+    // Append image as 'profile' field
+    formData.append("profile", image);
+
     if (menu === "ADD") {
-      console.log("ADD");
-      console.log(data);
       await api
-        .post(`/users/`, data, {
+        .post(`/users/`, formData, {
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         })
         .then((response) => {
           setMessage(response.data.message);
-          // setUsers();
           openSuccessSB(true);
         })
         .catch((error) => {
@@ -183,28 +269,26 @@ function Users() {
           openErrorSB(true);
         });
     } else {
-      console.log("Edit");
-      console.log(data);
       await api
-        .put(`/users/${selectedUser["UserID"]}`, data, {
+        .put(`/users/${selectedUser["UserID"]}`, formData, {
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         })
         .then((response) => {
           setMessage(response.data.message);
-          // setUsers();
           openSuccessSB(true);
         })
         .catch((error) => {
-          console.error("Error creating user:", error);
+          console.error("Error updating user:", error);
           setMessage(error.response.data.error);
           openErrorSB(true);
         });
     }
+
     setMenu("All");
   };
+
   const renderErrorSB = (
     <MDSnackbar
       color="error"
@@ -231,6 +315,13 @@ function Users() {
       bgWhite
     />
   );
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (isError) {
+    return <div>Error: {error.message}</div>;
+  }
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -258,6 +349,9 @@ function Users() {
                 canSearch: true,
                 columns: [
                   { Header: "Picture", accessor: "ProfilePicture", width: "25%" },
+                  { Header: "Stamp", accessor: "Stamp", width: "25%" },
+                  { Header: "Signature", accessor: "Signature", width: "25%" },
+                  { Header: "Titer", accessor: "Titer", width: "25%" },
                   { Header: "Name", accessor: "Username", width: "25%" },
                   { Header: "type", accessor: "UserType", width: "25%" },
                   { Header: "Department Name", accessor: "DepartmentName", width: "25%" },
@@ -265,14 +359,14 @@ function Users() {
                   { Header: "PhoneNumber", accessor: "PhoneNumber", width: "25%" },
                   { Header: "option", accessor: "option", width: "25%" },
                 ],
-                rows: [...users],
+                rows: getAllusers(),
               }}
             />
           </MDBox>
         </>
       ) : (
         <MDBox mt={2}>
-          <UserForm user={selectedUser} onSubmit={onSubmit} />
+          <UserForm user={selectedUser} onSubmit={onSubmit} roles={roles} data={data} />
         </MDBox>
       )}
       <MDBox pt={2} px={2}></MDBox>
@@ -287,14 +381,24 @@ function Users() {
           timeout: 500,
         }}
       >
-        <Box sx={style}>
+        <MDBox sx={style}>
           <Fade sx={style} in={open} timeout={500}>
             <img src={image} alt="asd" style={{ maxHeight: "90%", maxWidth: "90%" }} />
           </Fade>
-        </Box>
+          <MDButton color="error" onClick={handleDelete}>
+            Delete
+          </MDButton>
+        </MDBox>
       </Modal>
       {renderErrorSB}
       {renderSuccessSB}
+      <ModalContent
+        isopen={stampOpen}
+        handleClose={() => setStampOpen(false)}
+        id={selectedUser}
+        fetchData={fetchData}
+        name={users.find((val) => val.UserID === selectedUser)?.Username ?? ""}
+      />
 
       <Footer />
     </DashboardLayout>

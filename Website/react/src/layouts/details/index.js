@@ -81,7 +81,7 @@ function Details() {
     setOpenModal(false);
   };
   if (!Authenticated) {
-    navigate("/authentication/sign-in");
+    navigate("/sign-in");
     return null;
   }
 

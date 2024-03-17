@@ -5,7 +5,7 @@ import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
+import Autocomplete from "@mui/material/Autocomplete";
 import DialogTitle from "@mui/material/DialogTitle";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
@@ -15,19 +15,19 @@ import TextField from "@mui/material/TextField";
 import MDBox from "components/MDBox";
 import api from "api";
 import MDSnackbar from "components/MDSnackbar";
+import Chip from "@mui/material/Chip";
+import { useQueryClient } from "react-query";
 
 export default function MaxWidthDialog({
   isopen,
   handleClose,
   adminUsers,
   selectedRequest,
-  fetchData,
   reject,
+  comments,
 }) {
-  const [open, setOpen] = useState(isopen);
   const [adminUser, setAdminUser] = useState("");
-  const [comments, setComments] = useState([]);
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useState(comments === "" ? "" : comments);
   const [errorSB, setErrorSB] = useState(false);
   const [message, setMessage] = useState("");
   const openErrorSB = () => setErrorSB(true);
@@ -37,16 +37,44 @@ export default function MaxWidthDialog({
   const closeSuccessSB = () => setSuccessSB(false);
   const [reasons, setReasons] = useState([]);
   const [selectedReason, setSelectedReason] = useState("");
+  const [contigencyCodes, setContigencyCodes] = useState([]);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
     api
-      .get("/reject-reasons/1")
+      .get("/reject-reasons/1", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((response) => {
         setReasons(response.data);
         setSelectedReason(response.data[0].reason);
       })
       .catch((error) => console.error("Error fetching data: ", error));
   }, []);
+
+  useEffect(() => {
+    fetchLiveData();
+  }, []);
+
+  const fetchLiveData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await api.get("treasury/stable-total-balance", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setContigencyCodes(response.data);
+    } catch (error) {
+      console.error("Error fetching contigency codes:", error);
+    }
+  };
 
   const handleReasonChange = (event) => {
     setSelectedReason(event.target.value);
@@ -61,6 +89,10 @@ export default function MaxWidthDialog({
   const onConfirm = async () => {
     const token = localStorage.getItem("token");
     console.log(selectedRequest);
+    if (!adminUsers.length === 0 && adminUser === "") {
+      window.alert("Please Make Sure You have selected an Admin to pass the Task To!!");
+      return;
+    }
     await api
       .post(
         `/budget/pass/`,
@@ -79,7 +111,8 @@ export default function MaxWidthDialog({
       .then((response) => {
         setMessage("submited ");
         openSuccessSB(true);
-        fetchData();
+        queryClient.invalidateQueries("fetchcontengecy");
+
         handleClose();
       })
       .catch((error) => {
@@ -91,6 +124,10 @@ export default function MaxWidthDialog({
   const onReject = async () => {
     const token = localStorage.getItem("token");
     console.log(selectedRequest);
+    if (selectedReason === "") {
+      window.alert("Please Select A Reason for the rejection.");
+      return;
+    }
     await api
       .post(
         `/budget/reject`,
@@ -108,7 +145,8 @@ export default function MaxWidthDialog({
       .then((response) => {
         setMessage("submited ");
         openSuccessSB(true);
-        fetchData();
+        queryClient.invalidateQueries("fetchcontengecy");
+
         handleClose();
       })
       .catch((error) => {
@@ -182,7 +220,15 @@ export default function MaxWidthDialog({
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleClose}>Close</Button>
+            <Button
+              onClick={() => {
+                setComment(comments === "" ? "" : comments);
+                setAdminUser("");
+                handleClose();
+              }}
+            >
+              Close
+            </Button>
             <Button onClick={() => onReject()}>Submit</Button>
           </DialogActions>
         </Dialog>
@@ -194,7 +240,7 @@ export default function MaxWidthDialog({
             <DialogTitle>Choose A Reciver</DialogTitle>
           )}{" "}
           <DialogContent>
-            {adminUsers ?? (
+            {adminUsers ? (
               <Box
                 noValidate
                 component="form"
@@ -205,41 +251,57 @@ export default function MaxWidthDialog({
                   width: "fit-content",
                 }}
               >
-                <FormControl sx={{ mt: 2, minWidth: 120 }}>
-                  <InputLabel id="demo-simple-select-label">Admins</InputLabel>
-                  <Select
-                    labelId="demo-simple-select-label"
-                    value={adminUser}
-                    onChange={handleadminChange}
-                    label="Admins"
-                    inputProps={{
-                      name: "max-width",
-                      id: "max-width",
-                    }}
-                  >
-                    {adminUsers.map((admin) => {
-                      console.log(admin);
-                      return (
-                        <MenuItem key={admin.UserID} value={admin.UserID}>
-                          {admin.Username}
-                        </MenuItem>
-                      );
-                    })}
-                  </Select>
-                </FormControl>
+                {adminUsers.length !== 0 ? (
+                  <FormControl sx={{ mt: 2, minWidth: 120 }}>
+                    <InputLabel id="demo-simple-select-label">Admins</InputLabel>
+                    <Select
+                      labelId="demo-simple-select-label"
+                      value={adminUser}
+                      onChange={handleadminChange}
+                      label="Admins"
+                      inputProps={{
+                        name: "max-width",
+                        id: "max-width",
+                      }}
+                    >
+                      {adminUsers.map((admin) => {
+                        console.log(admin);
+                        return (
+                          <MenuItem key={admin.UserID} value={admin.UserID}>
+                            {admin.Username}
+                          </MenuItem>
+                        );
+                      })}
+                    </Select>
+                  </FormControl>
+                ) : null}
                 <MDBox mt={5}></MDBox>
-                <TextField
+                <MyAutocomplete
+                  handleCommentChange={handleCommentChange}
+                  comment={comment}
+                  contigencyCodes={contigencyCodes}
+                  setcomment={setComment}
+                />
+                {/* <TextField
                   onChange={handleCommentChange}
                   value={comment}
                   fullWidth
                   label="Comment"
                   id="fullWidth"
-                />
+                /> */}
               </Box>
-            )}
+            ) : null}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleClose}>Close</Button>
+            <Button
+              onClick={() => {
+                setComment(comments === "" ? "" : comments);
+                setAdminUser("");
+                handleClose();
+              }}
+            >
+              Close
+            </Button>
             <Button onClick={() => onConfirm()}>Submit</Button>
           </DialogActions>
         </Dialog>
@@ -249,3 +311,42 @@ export default function MaxWidthDialog({
     </>
   );
 }
+const formatNumber = (number) => {
+  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+const MyAutocomplete = ({ comment, handleCommentChange, contigencyCodes, setcomment }) => {
+  // Dummy data for choices
+  console.log(contigencyCodes);
+  const getOptionLabel = (option) => {
+    console.log("option", option);
+    return option?.contigency_id || option;
+  };
+  return (
+    <Autocomplete
+      freeSolo
+      noOptionsText="No labels"
+      sx={{ width: 500 }}
+      options={contigencyCodes}
+      inputValue={comment}
+      renderOption={(props, option) => (
+        <MDBox key={option.contigency_id} onClick={() => setcomment(option.contigency_id)}>
+          <Chip label={`${option.contigency_id} ${option.name}`} />
+          <Chip label={formatNumber(option.total_balance)} color="primary" />
+        </MDBox>
+      )}
+      getOptionLabel={getOptionLabel}
+      onInputChange={(event, newInputValue) => setcomment(newInputValue)}
+      renderInput={(params) => (
+        <TextField
+          onChange={handleCommentChange}
+          value={comment}
+          fullWidth
+          label="Comment"
+          id="fullWidth"
+          {...params}
+        />
+      )}
+    />
+  );
+};

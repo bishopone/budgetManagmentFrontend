@@ -41,7 +41,7 @@ function Documents() {
   const navigate = useNavigate();
   const isAuthenticated = localStorage.getItem("token");
   if (!isAuthenticated) {
-    navigate("/authentication/sign-in");
+    navigate("/sign-in");
     return null;
   }
   const [formData, setFormData] = useState({});

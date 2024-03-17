@@ -33,7 +33,7 @@ import MDAvatar from "components/MDAvatar";
 
 // Material Dashboard 2 React base styles
 import breakpoints from "assets/theme/base/breakpoints";
-
+import api from "api";
 // Images
 import burceMars from "assets/images/bruce-mars.jpg";
 import backgroundImage from "assets/images/bg-profile.jpeg";
@@ -94,21 +94,25 @@ function Header({ children }) {
       >
         <Grid container spacing={3} alignItems="center">
           <Grid item>
-            <MDAvatar src={burceMars} alt="profile-image" size="xl" shadow="sm" />
+            <MDAvatar
+              padding="5px"
+              src={`${api.getUri()}/${JSON.parse(localStorage.getItem("user")).ProfilePictureLink}`}
+              alt="name"
+              variant="circle"
+              size="xl"
+            />{" "}
           </Grid>
           <Grid item>
             <MDBox height="100%" mt={0.5} lineHeight={1}>
               <MDTypography variant="h5" fontWeight="medium">
-                jermain Cole
+                {JSON.parse(localStorage.getItem("user")).Username}
               </MDTypography>
-              <MDTypography variant="button" color="text" fontWeight="regular">
-                CEO / Co-Founder
-              </MDTypography>
+              <MDTypography variant="button" color="text" fontWeight="regular"></MDTypography>
             </MDBox>
           </Grid>
           <Grid item xs={12} md={6} lg={4} sx={{ ml: "auto" }}>
             <AppBar position="static">
-              <Tabs orientation={tabsOrientation} value={tabValue} onChange={handleSetTabValue}>
+              {/* <Tabs orientation={tabsOrientation} value={tabValue} onChange={handleSetTabValue}>
                 <Tab
                   label="App"
                   icon={
@@ -133,7 +137,7 @@ function Header({ children }) {
                     </Icon>
                   }
                 />
-              </Tabs>
+              </Tabs> */}
             </AppBar>
           </Grid>
         </Grid>

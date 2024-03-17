@@ -38,7 +38,7 @@ function Notifications() {
 
   if (!isAuthenticated) {
     // Redirect to login page if not authenticated
-    navigate("/authentication/sign-in");
+    navigate("/sign-in");
     return null;
   }
   const [successSB, setSuccessSB] = useState(false);

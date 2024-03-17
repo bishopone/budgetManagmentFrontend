@@ -1,5 +1,4 @@
-/* eslint-disable react/prop-types */
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import api from "../../api.js";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
@@ -12,64 +11,51 @@ import MDBox from "components/MDBox";
 import MDButton from "components/MDButton";
 import { Grid } from "@mui/material";
 import MaxWidthDialog from "./dialog.js";
+import { useDeleteDepartment, useFetchData } from "./api.js";
+
+/* eslint-disable react/prop-types */
 
 const DepartmentManager = () => {
-  const [data, setData] = useState([]);
+  const { data, isLoading, isError, error } = useFetchData();
+  const deleteDepartment = useDeleteDepartment();
   const [open, setOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState({});
+  const [isEdit, setIsEdit] = useState(false);
+
   const handleClose = () => {
     setOpen(false);
   };
+
   const handleOpen = () => {
     setOpen(true);
   };
-  async function fetchData() {
-    const token = localStorage.getItem("token");
-    await api
-      .get("/department/", {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((response) => {
-        setData(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching total documents:", error);
-      });
-  }
+
   const handleDelete = (id) => {
     console.log(id);
-    const token = localStorage.getItem("token");
-    api
-      .delete(`/department/${id}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then(() => {
-        fetchData();
-      });
+    deleteDepartment.mutate(id);
   };
 
   const handleEdit = (item) => {
     console.log(item);
+    setIsEdit(true);
     setSelectedDepartment(item);
     setOpen(true);
   };
 
   const handleAdd = (item) => {
     console.log(item);
+    setIsEdit(false);
     setSelectedDepartment(item);
     setOpen(true);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
+  if (isError) {
+    return <div>Error: {error.message}</div>;
+  }
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -97,7 +83,7 @@ const DepartmentManager = () => {
           isopen={open}
           handleClose={handleClose}
           selectedDepartment={selectedDepartment}
-          fetchdata={fetchData}
+          isEdit={isEdit}
         />
       </Grid>
       <Footer />

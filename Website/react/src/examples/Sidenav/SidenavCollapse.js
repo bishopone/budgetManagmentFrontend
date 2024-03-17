@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
 =========================================================
 * Material Dashboard 2 React - v2.2.0
@@ -36,7 +37,43 @@ import {
 // Material Dashboard 2 React context
 import { useMaterialUIController } from "context";
 
-function SidenavCollapse({ icon, name, active, ...rest }) {
+import { makeStyles } from "@mui/styles";
+import { Notifications } from "@mui/icons-material";
+import IconButton from "@mui/material/IconButton";
+import Badge from "@mui/material/Badge";
+
+const useStyles = makeStyles((theme) => ({
+  iconButton: {
+    position: "relative",
+  },
+  animatedIcon: {
+    color: "white",
+    animation: "$ring 0.6s infinite", // Decreased duration to speed up the animation
+  },
+  "@keyframes ring": {
+    "0%, 20%, 50%, 80%, 100%": {
+      transform: "rotate(0deg)",
+    },
+    "40%": {
+      transform: "rotate(10deg)",
+    },
+    "60%": {
+      transform: "rotate(-5deg)",
+    },
+  },
+}));
+
+const AnimatedNotificationIcon = ({ num = 1 }) => {
+  const classes = useStyles();
+
+  return (
+    <Badge badgeContent={num} color="error">
+      <Notifications className={classes.animatedIcon} />
+    </Badge>
+  );
+};
+// eslint-disable-next-line react/prop-types
+function SidenavCollapse({ icon, name, active, notify, ...rest }) {
   const [controller] = useMaterialUIController();
   const { miniSidenav, transparentSidenav, whiteSidenav, darkMode, sidenavColor } = controller;
 
@@ -59,13 +96,14 @@ function SidenavCollapse({ icon, name, active, ...rest }) {
             collapseIconBox(theme, { transparentSidenav, whiteSidenav, darkMode, active })
           }
         >
-          {typeof icon === "string" ? (
+          {notify.length !== 0 ? (
+            <AnimatedNotificationIcon num={notify[0].RequestCount} />
+          ) : typeof icon === "string" ? (
             <Icon sx={(theme) => collapseIcon(theme, { active })}>{icon}</Icon>
           ) : (
             icon
-          )}
+          )}{" "}
         </ListItemIcon>
-
         <ListItemText
           primary={name}
           sx={(theme) =>

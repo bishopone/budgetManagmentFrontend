@@ -21,7 +21,7 @@ import Card from "@mui/material/Card";
 import Switch from "@mui/material/Switch";
 import Grid from "@mui/material/Grid";
 import MuiLink from "@mui/material/Link";
-import api from "../../../api";
+import api from "api";
 // @mui icons
 import MDSnackbar from "components/MDSnackbar";
 
@@ -39,9 +39,11 @@ import BasicLayout from "layouts/authentication/components/BasicLayout";
 
 // Images
 import bgImage from "assets/images/bg-sign-in-basic.jpeg";
+import CircularProgress from "@mui/material/CircularProgress";
 
 function Basic() {
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const history = useNavigate();
@@ -74,6 +76,11 @@ function Basic() {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+  const handlePasswordKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleSignIn();
+    }
+  };
   useEffect(() => {
     const storedusername = localStorage.getItem("phone");
     const storedRememberMe = localStorage.getItem("rememberMe");
@@ -90,8 +97,9 @@ function Basic() {
 
   const handleSignIn = async () => {
     try {
+      setIsLoading(true);
       const response = await api.post(
-        "http://localhost:5000/users/login",
+        `users/login`,
         {
           PhoneNumber: username,
           Password: password,
@@ -109,7 +117,7 @@ function Basic() {
         console.log(token);
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(response.data.user));
-        // localStorage.setItem("adminPermission", JSON.stringify(response.data.permissions));
+        localStorage.setItem("permission", JSON.stringify(response.data.permissions));
         if (rememberMe) {
           localStorage.setItem("phone", username);
           localStorage.setItem("rememberMe", "true");
@@ -117,14 +125,36 @@ function Basic() {
           localStorage.removeItem("phone");
           localStorage.removeItem("rememberMe");
         }
+        setIsLoading(false);
         history("/dashboard");
       }
     } catch (error) {
-      setError(error.response.data.message);
+      console.log(error);
+      setIsLoading(false);
+      setError(error.response?.data.message ?? "error !!");
       openErrorSB(true);
       // Handle error, show error message, etc.
     }
   };
+  if (isLoading) {
+    return (
+      <BasicLayout image={bgImage}>
+        <Grid
+          container
+          spacing={0}
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          sx={{ minHeight: "100vh" }}
+        >
+          <Grid item xs={3}>
+            <CircularProgress color="inherit" />
+          </Grid>
+        </Grid>
+      </BasicLayout>
+    );
+  }
+
   return (
     <BasicLayout image={bgImage}>
       <Card>
@@ -144,19 +174,28 @@ function Basic() {
           </MDTypography>
           <Grid container spacing={3} justifyContent="center" sx={{ mt: 1, mb: 2 }}>
             <Grid item xs={2}>
-              <MDTypography component={MuiLink} href="#" variant="body1" color="white">
-                {/* <FacebookIcon color="inherit" /> */}
-              </MDTypography>
+              <MDTypography
+                component={MuiLink}
+                href="#"
+                variant="body1"
+                color="white"
+              ></MDTypography>
             </Grid>
             <Grid item xs={2}>
-              <MDTypography component={MuiLink} href="#" variant="body1" color="white">
-                {/* <GitHubIcon color="inherit" /> */}
-              </MDTypography>
+              <MDTypography
+                component={MuiLink}
+                href="#"
+                variant="body1"
+                color="white"
+              ></MDTypography>
             </Grid>
             <Grid item xs={2}>
-              <MDTypography component={MuiLink} href="#" variant="body1" color="white">
-                {/* <GoogleIcon color="inherit" /> */}
-              </MDTypography>
+              <MDTypography
+                component={MuiLink}
+                href="#"
+                variant="body1"
+                color="white"
+              ></MDTypography>
             </Grid>
           </Grid>
         </MDBox>
@@ -167,12 +206,13 @@ function Basic() {
                 onChange={handleSetUsername}
                 value={username}
                 type="phone"
-                label="Username"
+                label="Phone-Number"
                 fullWidth
               />
             </MDBox>
             <MDBox display="flex" alignItems="center" mb={2}>
               <MDInput
+                onKeyPress={handlePasswordKeyPress}
                 onChange={handleSetPassword}
                 value={password}
                 type={showPassword ? "text" : "password"}

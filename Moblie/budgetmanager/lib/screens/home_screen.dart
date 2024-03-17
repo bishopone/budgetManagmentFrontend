@@ -5,10 +5,13 @@ import 'package:budgetmanager/helpers/widgets/my_container.dart';
 import 'package:budgetmanager/helpers/widgets/my_spacing.dart';
 import 'package:budgetmanager/helpers/widgets/my_text.dart';
 import 'package:budgetmanager/screens/new_activity_screen.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+
+import '../config.dart';
 
 class HealthHomeScreen extends StatefulWidget {
   @override
@@ -34,7 +37,6 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
         return null; // Handle the error as needed
       }
       final decodeduser = jsonDecode(user!);
-      print(decodeduser['ProfilePictureLink']);
       return decodeduser;
     } catch (e) {
       print('Error retrieving username: $e');
@@ -44,6 +46,7 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appConfig = AppConfigProvider.of(context)?.appConfig;
     return Scaffold(
         body: FutureBuilder<Map<String, dynamic>?>(
             future: getUserStorage(),
@@ -60,7 +63,8 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                   ],
                 ));
               } else if (snapshot.data != null) {
-                print(snapshot.data!["ProfilePictureLink"].toString());
+                print(snapshot.data);
+
                 return Column(
                   // padding: MySpacing.top(48),
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -72,16 +76,21 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.all(Radius.circular(8)),
                         child: Image(
-                          image: NetworkImage(snapshot
-                                      .data!["ProfilePictureLink"]
-                                      .toString() ==
-                                  ""
-                              ? "https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?w=740&t=st=1696599824~exp=1696600424~hmac=b1c23d7d66b5cd491fb7031a390d1f991a24ba0a03304ff2acfda8b3c4cddf0b"
-                              : snapshot.data!["ProfilePictureLink"]
-                                  .toString()),
+                          image: NetworkImage("${appConfig?.apiBaseUrl}/${snapshot.data?["ProfilePictureLink"]?.toString() ?? ""}"
+                            ,
+                          ),
                           width: 100,
                           height: 100,
                           fit: BoxFit.cover,
+                          errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
+                            // If there's an error loading the network image, use a local fallback image
+                            return Image.asset(
+                              "assets/profile.jpg",
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -106,6 +115,7 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                           fontWeight: 600,
                           muted: true),
                     ),
+                    if(snapshot.data!['UserType'] == 2)
                     Container(
                       margin: MySpacing.top(24),
                       child: Row(
@@ -128,7 +138,8 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                         ],
                       ),
                     ),
-                    Container(
+                    if(snapshot.data!['UserType'] == 2)
+                      Container(
                       margin: MySpacing.top(24),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -141,10 +152,14 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                                 title: "መጠባበቅያ በጀት"),
                           ),
                           InkWell(
-                            onTap: () =>
-                                Navigator.pushNamed(context, "/insiderbudget"),
-                            child: singleHelpWidget(
-                                iconData: LucideIcons.wallet2, title: "ውስጠ ገቢ"),
+                            onTap: () => {},
+                            child: SizedBox( width: (MediaQuery.of(context).size.width - 96) / 3,
+                              height: 10,)
+
+                            // onTap: () =>
+                            //     Navigator.pushNamed(context, "/insiderbudget"),
+                            // child: singleHelpWidget(
+                            //     iconData: LucideIcons.wallet2, title: "ውስጠ ገቢ"),
                           ),
                         ],
                       ),

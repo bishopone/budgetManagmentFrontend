@@ -22,6 +22,7 @@ import PropTypes from "prop-types";
 // @mui material components
 import Card from "@mui/material/Card";
 import Divider from "@mui/material/Divider";
+import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Icon from "@mui/material/Icon";
 
@@ -30,30 +31,49 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 
 // Material Dashboard 2 React base styles
-import colors from "assets/theme/base/colors";
-import typography from "assets/theme/base/typography";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import { useState } from "react";
+import MDButton from "components/MDButton";
 
-function ProfileInfoCard({ title, description, info, social, action, shadow }) {
+function ProfileInfoCard({ title, description, info, action, shadow }) {
   const labels = [];
   const values = [];
-  const { socialMediaColors } = colors;
-  const { size } = typography;
+  const [isEdit, setIsEdit] = useState(false);
+  const [editData, setEditData] = useState(
+    Object.entries(info).map(([key, value]) => ({ [key]: value }))
+  );
+  const handleEdit = (value) => {
+    // setEditData((prevData) => [...prevData, { [value.target.name]: value.target.value }]);
+    updateValueByKey(value.target.name, value.target.value);
+  };
+  const updateValueByKey = (key, newValue) => {
+    setEditData((prevDataArray) => {
+      const newDataArray = prevDataArray.map((obj) => {
+        if (obj.hasOwnProperty(key)) {
+          // Create a new object with the updated value
+          return { ...obj, [key]: newValue };
+        }
+        return obj;
+      });
 
-  // Convert this form `objectKey` of the object key in to this `object key`
+      return newDataArray;
+    });
+  };
+  const handleSubmit = (value) => {
+    console.log(editData);
+  };
   Object.keys(info).forEach((el) => {
-    if (el.match(/[A-Z\s]+/)) {
-      const uppercaseLetter = Array.from(el).find((i) => i.match(/[A-Z]+/));
-      const newElement = el.replace(uppercaseLetter, ` ${uppercaseLetter.toLowerCase()}`);
-
-      labels.push(newElement);
-    } else {
-      labels.push(el);
-    }
+    labels.push(el);
   });
 
   // Push the object values into the values array
   Object.values(info).forEach((el) => values.push(el));
 
+  const findValueByKey = (key) => {
+    const foundObject = editData.find((obj) => obj.hasOwnProperty(key));
+    return foundObject ? foundObject[key] : undefined;
+  };
   // Render the card info items
   const renderItems = labels.map((label, key) => (
     <MDBox key={label} display="flex" py={1} pr={2}>
@@ -65,32 +85,47 @@ function ProfileInfoCard({ title, description, info, social, action, shadow }) {
       </MDTypography>
     </MDBox>
   ));
+  const renderEditItems = labels.map((label, key) => {
+    return (
+      <MDBox key={label} display="flex" py={1} pr={2}>
+        <MDTypography variant="button" fontWeight="bold" textTransform="capitalize">
+          {label}: &nbsp;
+        </MDTypography>
+        {console.log(label)}
+        {/* {findValueByKey(label)} */}
+        {label === "Gender" ? (
+          <Select label={label} name={label} value={findValueByKey(label)} onChange={handleEdit}>
+            <MenuItem value="Male">Male</MenuItem>
+            <MenuItem value="Female">Female</MenuItem>
+          </Select>
+        ) : (
+          <TextField
+            name={label}
+            label={label}
+            value={findValueByKey(label)}
+            onChange={handleEdit}
+            fullWidth
+          />
+        )}
+      </MDBox>
+    );
+  });
 
   // Render the card social media icons
-  const renderSocial = social.map(({ link, icon, color }) => (
-    <MDBox
-      key={color}
-      component="a"
-      href={link}
-      target="_blank"
-      rel="noreferrer"
-      fontSize={size.lg}
-      color={socialMediaColors[color].main}
-      pr={1}
-      pl={0.5}
-      lineHeight={1}
-    >
-      {icon}
-    </MDBox>
-  ));
-
   return (
     <Card sx={{ height: "100%", boxShadow: !shadow && "none" }}>
       <MDBox display="flex" justifyContent="space-between" alignItems="center" pt={2} px={2}>
         <MDTypography variant="h6" fontWeight="medium" textTransform="capitalize">
           {title}
         </MDTypography>
-        <MDTypography component={Link} to={action.route} variant="body2" color="secondary">
+        <MDTypography
+          onClick={() => {
+            console.log("selam");
+            setIsEdit(!isEdit);
+          }}
+          variant="body2"
+          color="secondary"
+        >
           <Tooltip title={action.tooltip} placement="top">
             <Icon>edit</Icon>
           </Tooltip>
@@ -105,15 +140,8 @@ function ProfileInfoCard({ title, description, info, social, action, shadow }) {
         <MDBox opacity={0.3}>
           <Divider />
         </MDBox>
-        <MDBox>
-          {renderItems}
-          <MDBox display="flex" py={1} pr={2}>
-            <MDTypography variant="button" fontWeight="bold" textTransform="capitalize">
-              social: &nbsp;
-            </MDTypography>
-            {renderSocial}
-          </MDBox>
-        </MDBox>
+        <MDBox>{isEdit ? renderEditItems : renderItems}</MDBox>
+        {isEdit ? <MDButton onClick={handleSubmit}>Submit</MDButton> : null}
       </MDBox>
     </Card>
   );

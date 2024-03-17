@@ -13,7 +13,7 @@ Coded by www.creative-tim.com
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // react-router-dom components
 import { useLocation, NavLink } from "react-router-dom";
@@ -38,7 +38,6 @@ import SidenavCollapse from "examples/Sidenav/SidenavCollapse";
 // Custom styles for the Sidenav
 import SidenavRoot from "examples/Sidenav/SidenavRoot";
 import sidenavLogoLabel from "examples/Sidenav/styles/sidenav";
-
 // Material Dashboard 2 React context
 import {
   useMaterialUIController,
@@ -46,13 +45,19 @@ import {
   setTransparentSidenav,
   setWhiteSidenav,
 } from "context";
+import { useTranslation } from "react-i18next";
+import { useQueryClient } from "react-query";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentSidenav, whiteSidenav, darkMode, sidenavColor } = controller;
   const location = useLocation();
   const collapseName = location.pathname.replace("/", "");
-
+  const [notify, setNotify] = useState([]);
+  const permissions = JSON.parse(localStorage.getItem("permission")) ?? [];
   let textColor = "white";
 
   if (transparentSidenav || (whiteSidenav && !darkMode)) {
@@ -64,9 +69,40 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const closeSidenav = () => setMiniSidenav(dispatch, true);
   const hanleLogout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("adminData");
-    localStorage.removeItem("adminPermission");
+    localStorage.removeItem("user");
+    localStorage.removeItem("permission");
   };
+  function getEventSourceUrl() {
+    const token = localStorage.getItem("token");
+    return `${process.env.REACT_APP_API_BASE_URL}/budget/updates?token=${token}`;
+  }
+  useEffect(() => {
+    if (!localStorage.getItem("user")) {
+      return;
+    }
+    const user = JSON.parse(localStorage.getItem("user"));
+    const eventSource = new EventSource(getEventSourceUrl());
+    eventSource.onmessage = async (event) => {
+      const data = JSON.parse(event.data);
+      const filltered = data.filter((val) => val.NextAdmin === user?.UserID);
+      if (filltered) {
+        console.log("notify", filltered);
+        queryClient.invalidateQueries("fetchrecurrents");
+        queryClient.invalidateQueries("fetchcapitalown");
+        queryClient.invalidateQueries("fetchcapitalother");
+        queryClient.invalidateQueries("fetchcontengecy");
+        setNotify(filltered);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error("SSE error:", error);
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
 
   useEffect(() => {
     // A function that sets the mini state of the sidenav.
@@ -89,66 +125,70 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   }, [dispatch, location]);
 
   // Render all the routes from the routes.js (All the visible items on the Sidenav)
-  const renderRoutes = routes.map(({ type, name, icon, title, noCollapse, key, href, route }) => {
-    let returnValue;
+  const renderRoutes = routes.map(
+    ({ type, name, icon, typename, title, noCollapse, key, href, route, permission }) => {
+      let returnValue;
+      if (permission && permissions.includes(permission)) {
+        if (type === "collapse") {
+          returnValue = href ? (
+            <Link
+              href={href}
+              key={key}
+              target="_blank"
+              rel="noreferrer"
+              sx={{ textDecoration: "none" }}
+            >
+              <SidenavCollapse
+                name={name}
+                icon={icon}
+                active={key === collapseName}
+                noCollapse={noCollapse}
+              />
+            </Link>
+          ) : (
+            <NavLink key={key} to={route}>
+              <SidenavCollapse
+                onClick={name === "logout" ? hanleLogout : null}
+                name={t(name)}
+                icon={icon}
+                active={key === collapseName}
+                notify={notify.filter((item) => item.TypeName === typename)}
+              />
+            </NavLink>
+          );
+        } else if (type === "title") {
+          returnValue = (
+            <MDTypography
+              key={key}
+              color={textColor}
+              display="block"
+              variant="caption"
+              fontWeight="bold"
+              textTransform="uppercase"
+              pl={3}
+              mt={2}
+              mb={1}
+              ml={1}
+            >
+              {title}
+            </MDTypography>
+          );
+        } else if (type === "divider") {
+          returnValue = (
+            <Divider
+              key={key}
+              light={
+                (!darkMode && !whiteSidenav && !transparentSidenav) ||
+                (darkMode && !transparentSidenav && whiteSidenav)
+              }
+            />
+          );
+        }
 
-    if (type === "collapse") {
-      returnValue = href ? (
-        <Link
-          href={href}
-          key={key}
-          target="_blank"
-          rel="noreferrer"
-          sx={{ textDecoration: "none" }}
-        >
-          <SidenavCollapse
-            name={name}
-            icon={icon}
-            active={key === collapseName}
-            noCollapse={noCollapse}
-          />
-        </Link>
-      ) : (
-        <NavLink key={key} to={route}>
-          <SidenavCollapse
-            onClick={name === "logout" ? hanleLogout : null}
-            name={name}
-            icon={icon}
-            active={key === collapseName}
-          />
-        </NavLink>
-      );
-    } else if (type === "title") {
-      returnValue = (
-        <MDTypography
-          key={key}
-          color={textColor}
-          display="block"
-          variant="caption"
-          fontWeight="bold"
-          textTransform="uppercase"
-          pl={3}
-          mt={2}
-          mb={1}
-          ml={1}
-        >
-          {title}
-        </MDTypography>
-      );
-    } else if (type === "divider") {
-      returnValue = (
-        <Divider
-          key={key}
-          light={
-            (!darkMode && !whiteSidenav && !transparentSidenav) ||
-            (darkMode && !transparentSidenav && whiteSidenav)
-          }
-        />
-      );
+        return returnValue;
+      }
     }
-
-    return returnValue;
-  });
+  );
 
   return (
     <SidenavRoot
@@ -171,7 +211,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           </MDTypography>
         </MDBox>
         <MDBox component={NavLink} to="/" display="flex" alignItems="center">
-          {/* {brand && <MDBox component="img" src={brand} alt="Brand" width="2rem" />} */}
+          {brand && <MDBox component="img" src={brand} alt="Brand" width="2rem" />}
           <MDBox
             width={!brandName && "100%"}
             sx={(theme) => sidenavLogoLabel(theme, { miniSidenav })}

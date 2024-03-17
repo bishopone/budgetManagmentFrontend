@@ -34,7 +34,7 @@ function Search() {
   const url = process.env.REACT_APP_API_BASE_URL;
   const isAuthenticated = localStorage.getItem("token");
   if (!isAuthenticated) {
-    navigate("/authentication/sign-in");
+    navigate("/sign-in");
     return null;
   }
   const [searchResults, setSearchResults] = useState([]);

@@ -17,9 +17,8 @@ Coded by www.creative-tim.com
 import MDBox from "components/MDBox";
 import MDAvatar from "components/MDAvatar";
 import Icon from "@mui/material/Icon";
-import { Template, generate } from "@pdfme/generator";
+import LoadingModal from "examples/Loading"; // Make sure to adjust the import path based on your project structure
 
-import template from "./template.json";
 import { useState, useEffect, useRef } from "react";
 // Material Dashboard 2 React examples
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -42,8 +41,13 @@ import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 
 import MDButton from "components/MDButton";
-import { Modal, Backdrop, Fade, Box } from "@mui/material";
+import { Modal, Backdrop, Fade, Box, Grid, CircularProgress } from "@mui/material";
 import MaxWidthDialog from "./components/dialog/dialog";
+import MaxWidthDialogDetail from "./components/dialog/dialogdetail";
+import { useTranslation } from "react-i18next";
+import { useFetchData } from "./api";
+import ErrorComponent from "examples/Error";
+
 const style = {
   position: "absolute",
   top: "50%",
@@ -61,26 +65,109 @@ const style = {
 // eslint-disable-next-line react/prop-types
 function Requests({ budgettype }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const isAuthenticated = localStorage.getItem("token");
   if (!isAuthenticated) {
-    navigate("/authentication/sign-in");
+    navigate("/sign-in");
     return null;
   }
-  const uiRef = useRef(null);
+  const [reject, setIsReject] = useState(false);
+  const [type, setType] = useState("");
+  const [fillter, setFillter] = useState(0);
 
   const [menu, setMenu] = useState("All");
   const [selectedRequest, setSelectedRequest] = useState("");
-  const [users, setUsers] = useState([]);
+  // const [Requests, setUsers] = useState([]);
   const [open, setOpen] = useState(false);
-  const [fillter, setFillter] = useState(0);
   const [selectedUser, setSelectedUser] = useState({});
-  const [errorSB, setErrorSB] = useState(false);
   const [message, setMessage] = useState("");
   const openErrorSB = () => setErrorSB(true);
   const closeErrorSB = () => setErrorSB(false);
+  const [errorSB, setErrorSB] = useState(false);
   const [successSB, setSuccessSB] = useState(false);
   const openSuccessSB = () => setSuccessSB(true);
   const closeSuccessSB = () => setSuccessSB(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [prevFillter, setPrevFillter] = useState(null);
+  const {
+    data: Requests,
+    isLoading: isrequestLoading,
+    isError: isrequestError,
+    error: requestError,
+  } = useFetchData(fillter, budgettype);
+
+  const handleModalOpen = () => {
+    setModalVisible(true);
+  };
+
+  const handleModalClose = () => {
+    setModalVisible(false);
+  };
+  const onView = async (value) => {
+    try {
+      handleModalOpen();
+      const token = localStorage.getItem("token");
+
+      const pdf = await api.get(`/pdf/generate-pdf/${value.RequestID}`, {
+        headers: { "Content-Type": "application/pdf", Authorization: `Bearer ${token}` },
+        responseType: "arraybuffer",
+      });
+
+      const blob = new Blob([pdf.data], { type: "application/pdf" });
+
+      // Create a URL for the blob
+      const url = URL.createObjectURL(blob);
+      handleModalClose();
+
+      // Open the PDF in a new tab
+      window.open(url, "_blank");
+
+      // Release the URL when it's no longer needed to free up resources
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      handleModalClose();
+
+      console.error("Error fetching PDF:", error);
+    }
+  };
+  const onReject = async (value) => {
+    console.log(value);
+    setSelectedRequest(value.RequestID);
+    setIsReject(true);
+    setOpen(true);
+  };
+
+  const onNextStep = async (type, requestId) => {
+    const token = localStorage.getItem("token");
+    console.log(`/budget/nextauth/${type}/${requestId}`);
+    await api
+      .get(`/budget/nextauth/${type}/${requestId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((response) => {
+        console.log("act like finfish");
+        console.log(response.data);
+        setAdminUsers(response.data.auths);
+        setSelectedRequest(requestId);
+        setType(response.data.type);
+        handleAdminChoice(true);
+      })
+      .catch((error) => {
+        console.error("Error deleting user:", error);
+      });
+  };
+
+  const handleAdminChoice = (value) => {
+    setIsReject(false);
+    setOpen(value);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
   function formatNumberWithSlashes(input) {
     const inputString = input.toString(); // Convert input to a string
     let formattedString = "";
@@ -94,147 +181,6 @@ function Requests({ budgettype }) {
     console.log("formattedString", formattedString);
     return formattedString;
   }
-  useEffect(() => {
-    fetchData();
-  }, [fillter]);
-
-  async function fetchData() {
-    const token = localStorage.getItem("token");
-    const url = `/budget/${fillter === 0 ? `active/${budgettype}` : `${budgettype}`}`;
-    console.log(url);
-    await api
-      .get(url, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((response) => {
-        const userlist = [];
-        const budgetTypes = [
-          "Normal Budget",
-          "Capital Budget",
-          "Emergency Budget",
-          "Internal Budget",
-        ];
-        response.data.forEach((x) => {
-          const transformedUser = {
-            ...x,
-            option: (
-              <>
-                <IconButton color="warning" onClick={() => onView(x)}>
-                  <Icon>visibility</Icon>
-                </IconButton>
-                {fillter === 0 ? (
-                  <IconButton color="success" onClick={() => onNextStep(x.Type, x.RequestID)}>
-                    <Icon>thumb_up</Icon>
-                  </IconButton>
-                ) : null}
-                {fillter === 0 ? (
-                  <IconButton color="primary" onClick={() => onView(x)}>
-                    <Icon>thumb_down</Icon>
-                  </IconButton>
-                ) : null}
-              </>
-            ),
-            typeName: budgetTypes[x.Type - 1],
-            BudgetFromformated: formatNumberWithSlashes(x.BudgetFrom),
-            BudgetToformated: formatNumberWithSlashes(x.BudgetTo),
-          };
-
-          // Push the transformed object to the userlist array
-          userlist.push(transformedUser);
-        });
-        console.log(userlist);
-        setUsers(userlist);
-      })
-      .catch((error) => {
-        console.error("Error fetching users:", error);
-      });
-  }
-  async function getImageAsBase64(url, type) {
-    try {
-      // Fetch the image from the server using Axios
-      const response = await api.get(url, {
-        responseType: "arraybuffer",
-      });
-      // Check if the request was successful
-      if (response.status !== 200) {
-        throw new Error(`Failed to fetch the image. Status: ${response.status}`);
-      }
-
-      // Create a Blob from the response data
-      // const imageBlob = new Blob([response.data]);
-      const arrayBuffer = new Uint8Array(response.data);
-      const imageBlob = new Blob([arrayBuffer], { type: type });
-
-      const base64Data = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          resolve(reader.result.split(",")[1]);
-        };
-        reader.onerror = (error) => {
-          console.error("FileReader error:", error);
-          reject(error);
-        };
-        reader.readAsDataURL(imageBlob);
-      });
-      return base64Data;
-    } catch (error) {
-      console.error("Error:", error);
-      return null;
-    }
-  }
-
-  const onView = async (value) => {
-    try {
-      const pdf = await api.get(`/pdf/generate-pdf/${value.RequestID}`, {
-        headers: { "Content-Type": "application/pdf" },
-        responseType: "arraybuffer",
-      });
-
-      const blob = new Blob([pdf.data], { type: "application/pdf" });
-
-      // Create a URL for the blob
-      const url = URL.createObjectURL(blob);
-
-      // Open the PDF in a new tab
-      window.open(url, "_blank");
-
-      // Release the URL when it's no longer needed to free up resources
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Error fetching PDF:", error);
-    }
-  };
-  const onNextStep = async (type, requestId) => {
-    const token = localStorage.getItem("token");
-    await api
-      .get(`/budget/nextauth/${type}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((response) => {
-        console.log(response);
-        setAdminUsers(response.data);
-        setSelectedRequest(requestId);
-        handleAdminChoice(true);
-      })
-      .catch((error) => {
-        console.error("Error deleting user:", error);
-      });
-  };
-
-  const handleAdminChoice = (value) => {
-    setOpen(value);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
   const onSubmit = async (data) => {
     const token = localStorage.getItem("token");
 
@@ -242,7 +188,7 @@ function Requests({ budgettype }) {
       console.log("ADD");
       console.log(data);
       await api
-        .post(`/users/`, data, {
+        .post(`/Requests/`, data, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -262,7 +208,7 @@ function Requests({ budgettype }) {
       console.log("Edit");
       console.log(data);
       await api
-        .put(`/users/${selectedUser["UserID"]}`, data, {
+        .put(`/Requests/${selectedUser["UserID"]}`, data, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -312,7 +258,82 @@ function Requests({ budgettype }) {
     console.log(newValue);
     setFillter(newValue);
   };
+  if (isrequestLoading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <Grid
+          container
+          spacing={0}
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          sx={{ minHeight: "100vh" }}
+        >
+          <Grid item xs={3}>
+            <CircularProgress color="inherit" />
+          </Grid>
+        </Grid>
+      </DashboardLayout>
+    );
+  }
 
+  if (isrequestError) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <Grid
+          container
+          spacing={0}
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          sx={{ minHeight: "100vh" }}
+        >
+          <Grid item xs={3}>
+            <ErrorComponent error={requestError} />
+          </Grid>
+        </Grid>
+      </DashboardLayout>
+    );
+  }
+  const displayRequest = () => {
+    const userlist = [];
+    const budgetTypes = [
+      "Recurrent Budget",
+      "Capital Budget",
+      "Contengency Budget",
+      "Internal Budget",
+    ];
+    Requests.forEach((x) => {
+      console.log(x);
+      const transformedUser = {
+        ...x,
+        option: (
+          <>
+            <IconButton color="warning" onClick={() => onView(x)}>
+              <Icon>visibility</Icon>
+            </IconButton>
+            {fillter === 0 ? (
+              <IconButton color="success" onClick={() => onNextStep(x.Type, x.RequestID)}>
+                <Icon>thumb_up</Icon>
+              </IconButton>
+            ) : null}
+            {fillter === 0 ? (
+              <IconButton color="primary" onClick={() => onReject(x)}>
+                <Icon>thumb_down</Icon>
+              </IconButton>
+            ) : null}
+          </>
+        ),
+        typeName: t(budgetTypes[x.Type - 1]),
+        BudgetFromformated: formatNumberWithSlashes(x.BudgetFrom),
+        BudgetToformated: formatNumberWithSlashes(x.BudgetTo),
+      };
+      userlist.push(transformedUser);
+    });
+    return userlist;
+  };
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -333,8 +354,10 @@ function Requests({ budgettype }) {
               onChange={handleChange}
               aria-label="disabled tabs example"
             >
-              <Tab label="Assigned To Me" />
-              <Tab label="All Asigned" />
+              <Tab label={t("Assigned To Me")} />
+              <Tab label={t("All Assigned")} />
+              {/* <Tab label="ለእኔ ተመድቧል" />
+              <Tab label="የተመደበው ጠቅላላ" /> */}
             </Tabs>
           </MDBox>
           <MDBox pt={2} px={2}></MDBox>
@@ -343,15 +366,18 @@ function Requests({ budgettype }) {
               table={{
                 columns: [
                   { Header: "RequestID", accessor: "RequestID", width: "25%" },
-                  { Header: "Budget Type", accessor: "typeName", width: "25%" },
-                  { Header: "FromDep", accessor: "BudgetFromformated", width: "20%" },
-                  { Header: "ToDep", accessor: "BudgetToformated", width: "20%" },
-                  { Header: "Date", accessor: "ChangeDate", width: "20%" },
-                  { Header: "Amount", accessor: "Amount", width: "20%" },
-                  { Header: "State", accessor: "NewState", width: "25%" },
-                  { Header: "option", accessor: "option", width: "20%" },
+                  { Header: "የበጀት አይነት", accessor: "typeName", width: "25%" },
+                  { Header: "የ ላኪ ስም", accessor: "UserName", width: "25%" },
+                  { Header: "የ ተቁዋም ስም", accessor: "Name", width: "25%" },
+                  { Header: "ከ", accessor: "BudgetFromformated", width: "20%" },
+                  { Header: "ወደ", accessor: "BudgetToformated", width: "20%" },
+                  { Header: "ቀን", accessor: "ChangeDate", width: "20%" },
+                  { Header: "ብር", accessor: "Amount", width: "20%" },
+                  { Header: "ሁኔታ", accessor: "NewState", width: "25%" },
+                  { Header: "አስተያየት", accessor: "comments", width: "25%" },
+                  { Header: "አማራጭ", accessor: "option", width: "20%" },
                 ],
-                rows: [...users],
+                rows: displayRequest(),
               }}
             />
           </MDBox>
@@ -362,16 +388,34 @@ function Requests({ budgettype }) {
         </MDBox>
       )}
       <MDBox pt={2} px={2}></MDBox>
-      <MaxWidthDialog
-        isopen={open}
-        handleClose={handleClose}
-        adminUsers={adminUsers}
-        selectedRequest={selectedRequest}
-        fetchData={fetchData}
-      />
+      {type !== "Worker" ? (
+        <MaxWidthDialog
+          isopen={open}
+          handleClose={handleClose}
+          adminUsers={adminUsers}
+          selectedRequest={selectedRequest}
+          reject={reject}
+        />
+      ) : reject ? (
+        <MaxWidthDialog
+          isopen={open}
+          handleClose={handleClose}
+          adminUsers={adminUsers}
+          selectedRequest={selectedRequest}
+          reject={reject}
+        />
+      ) : (
+        <MaxWidthDialogDetail
+          isopen={open}
+          handleClose={handleClose}
+          adminUsers={adminUsers}
+          selectedRequest={selectedRequest}
+        />
+      )}
+      <LoadingModal isVisible={modalVisible} onClose={handleModalClose} />
+
       {renderErrorSB}
       {renderSuccessSB}
-      <div ref={uiRef} />
 
       <Footer />
     </DashboardLayout>
