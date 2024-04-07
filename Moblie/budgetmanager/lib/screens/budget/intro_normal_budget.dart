@@ -16,7 +16,7 @@ import '../../helpers/widgets/my_image_attachments.dart';
 import '../../helpers/widgets/my_popups.dart';
 import '../../helpers/widgets/my_radiobutton.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart'; // Import the http_parser package
+// Import the http_parser package
 
 import '../../helpers/widgets/my_signiture.dart';
 import '../../models/budget_code.dart';
@@ -217,7 +217,7 @@ class _DemoUsageNormalState extends State<DemoUsageNormal> {
               .toList();
           print(filePaths);
           setState(() {
-            _pictures.addAll(filePaths as List<String>);
+            _pictures.addAll(filePaths);
           });
         }
       }

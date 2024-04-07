@@ -3,13 +3,10 @@
 * Version : 1.0.0
 * */
 
-import 'dart:convert';
 import 'dart:io';
-import 'package:budgetmanager/screens/activity_screen.dart';
 import 'package:budgetmanager/screens/home_screen.dart';
 import 'package:budgetmanager/screens/profile_screen.dart';
 import 'package:budgetmanager/screens/request_detail_screen.dart';
-import 'package:budgetmanager/screens/schedule_screen.dart';
 import 'package:budgetmanager/helpers/theme/app_notifier.dart';
 import 'package:budgetmanager/helpers/theme/app_theme.dart';
 import 'package:budgetmanager/helpers/utils/my_shadow.dart';
@@ -95,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen>
                   color: theme.colorScheme.background,
                   shadow: MyShadow(
                       position: MyShadowPosition.top, elevation: 2, alpha: 20),
-                  padding: EdgeInsets.only(top: 12, bottom: 12),
+                  padding: EdgeInsets.only(top: 12, bottom: 2),
                   child: TabBar(
                     controller: _tabController,
                     indicator: BoxDecoration(),

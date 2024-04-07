@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 import 'package:im_animations/im_animations.dart';
 import 'package:provider/provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:window_manager/window_manager.dart';
 import 'config.dart';
 import 'helpers/theme/app_notifier.dart';
 import 'screens/full_app.dart';
@@ -22,8 +23,8 @@ import 'firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:auto_updater/auto_updater.dart';
 
-const String environment = 'development'; // Replace with your logic to determine environment
-// const String environment = 'production'; // Replace with your logic to determine environment
+// const String environment = 'development'; // Replace with your logic to determine environment
+const String environment = 'production'; // Replace with your logic to determine environment
 // const String environment = 'staging'; // Replace with your logic to determine environment
 
 @pragma('vm:entry-point')
@@ -143,12 +144,18 @@ void main() async {
     default:
       throw Exception('Unknown environment: $environment');
   }
-  WidgetsFlutterBinding.ensureInitialized();
-
-  String feedURL = '${appConfig?.apiBaseUrl}/appcast.xml';
-  await autoUpdater.setFeedURL(feedURL);
-  await autoUpdater.checkForUpdates();
-  await autoUpdater.setScheduledCheckInterval(3600);
+  if(Platform.isWindows) {
+    WidgetsFlutterBinding.ensureInitialized();
+    await windowManager.ensureInitialized();
+    windowManager.waitUntilReadyToShow(null, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+    String feedURL = '${appConfig.apiBaseUrl}/appcast.xml';
+    await autoUpdater.setFeedURL(feedURL);
+    await autoUpdater.checkForUpdates(inBackground: true);
+    await autoUpdater.setScheduledCheckInterval(3600);
+  }
   runApp(ChangeNotifierProvider<AppNotifier>(
     create: (context) => AppNotifier(),
     builder: (context, child) =>
@@ -172,7 +179,7 @@ void main() async {
                 buttonTheme: const ButtonThemeData(
                   buttonColor: Color(0xff5a4a94),
                   shape: RoundedRectangleBorder(),
-                  textTheme: ButtonTextTheme.accent,
+                  textTheme: ButtonTextTheme.normal,
                 ),
                 appBarTheme: const AppBarTheme(
                     color: Colors.white70,
@@ -203,10 +210,10 @@ class SplashScreen extends StatelessWidget {
   Future<void> validateToken(context) async {
     const secureStorage = FlutterSecureStorage();
     final token = await secureStorage.read(key: "token");
-    // if (token != null) {
-    //   Navigator.pushReplacementNamed(context, '/home');
-    //   return;
-    // }
+    if (token == null) {
+    Navigator.pushReplacementNamed(context, '/auth');
+      return;
+    }
     final appConfig = AppConfigProvider
         .of(context)
         ?.appConfig;
@@ -217,7 +224,7 @@ class SplashScreen extends StatelessWidget {
 
     try {
       final response = await http.get(url, headers: headers);
-      print(token);
+      print('Bearer $token');
       print(response.body);
       print(response.statusCode);
       if (response.statusCode == 200) {
@@ -228,8 +235,8 @@ class SplashScreen extends StatelessWidget {
       }
     } catch (error) {
       print(error);
-      Navigator.pushReplacementNamed(context, '/auth');
-      // Navigator.pushReplacementNamed(context, '/no-internet-error');
+      // Navigator.pushReplacementNamed(context, '/auth');
+      Navigator.pushReplacementNamed(context, '/no-internet-error');
     }
   }
 
@@ -253,53 +260,7 @@ class SplashScreen extends StatelessWidget {
               ),
             ],
           ),
-          // child: HeartBeatAnimation(),
         ),
-      ),
-    );
-  }
-}
-
-class HeartBeatAnimation extends StatefulWidget {
-  const HeartBeatAnimation({super.key});
-
-  @override
-  _HeartBeatAnimationState createState() => _HeartBeatAnimationState();
-}
-
-class _HeartBeatAnimationState extends State<HeartBeatAnimation> {
-  double heartSize = 100.0;
-  bool growing = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _startAnimation();
-  }
-
-  void _startAnimation() {
-    Future.delayed(const Duration(milliseconds: 400), () {
-      setState(() {
-        heartSize = growing ? 220.0 : 200.0;
-        growing = !growing;
-        _startAnimation();
-      });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // return AnimatedContainer(
-    //       duration: const Duration(milliseconds: 400),
-    //       width: heartSize,
-    //       height: heartSize,
-    //       child: Image.asset('assets/logo.jpg'), // Replace with your heart image
-    //
-    // );
-    return HeartBeat(
-      child: const CircleAvatar(
-        radius: 150.0,
-        backgroundImage: AssetImage('assets/logo.jpg'),
       ),
     );
   }

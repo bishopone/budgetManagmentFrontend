@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+    <channel>
+        <title>auto_updater_example</title>
+        <description>Most recent updates to auto_updater_example</description>
+        <language>en</language>
+        <item>
+            <title>Version 1.1.0</title>
+            <sparkle:releaseNotesLink>
+                https://your_domain/your_path/release_notes.html
+            </sparkle:releaseNotesLink>
+            <pubDate>Sun, 16 Feb 2022 12:00:00 +0800</pubDate>
+            <enclosure url="https://github.com/bishopone/budgetManagmentFrontend/releases/download/v1.0.0/Release.zip"
+                sparkle:dsaSignature="MD4CHQCooA6rbKmtsXu0Ny5ZuaUCNzXURbydhashnLUHAh0AhPlq1rWxQSoRga03fTmaAh5QcqiqOawcsgKHfA=="                 sparkle:version="1.1.0+2"
+                sparkle:os="windows"
+                length="0"
+                type="application/octet-stream" />
+        </item>
+    </channel>
+</rss>

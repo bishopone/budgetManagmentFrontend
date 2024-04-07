@@ -4,8 +4,6 @@ import 'package:budgetmanager/helpers/theme/app_theme.dart';
 import 'package:budgetmanager/helpers/widgets/my_container.dart';
 import 'package:budgetmanager/helpers/widgets/my_spacing.dart';
 import 'package:budgetmanager/helpers/widgets/my_text.dart';
-import 'package:budgetmanager/screens/new_activity_screen.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -36,7 +34,7 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
       if (user == null) {
         return null; // Handle the error as needed
       }
-      final decodeduser = jsonDecode(user!);
+      final decodeduser = jsonDecode(user);
       return decodeduser;
     } catch (e) {
       print('Error retrieving username: $e');

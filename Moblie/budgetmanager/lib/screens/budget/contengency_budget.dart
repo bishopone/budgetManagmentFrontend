@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
-import 'package:dotted_border/dotted_border.dart';
+import 'package:flutter/services.dart';
 import 'package:http_parser/http_parser.dart'; // Import the http_parser package
+import '../../helpers/widgets/my_custom_drop_down.dart';
 import '../../helpers/widgets/my_popups.dart';
 
 import 'package:flutter/material.dart';
@@ -12,14 +13,10 @@ import 'package:http/http.dart' as http;
 
 import '../../config.dart';
 import '../../helpers/widgets/my_product_card.dart';
-import '../../helpers/widgets/my_signiture.dart';
-import '../../helpers/widgets/my_radiobutton.dart';
 import '../../helpers/widgets/my_drop_down_option.dart';
 import '../../helpers/widgets/my_drop_down_or_input.dart';
 import '../../models/budget_code.dart';
-import '../../models/capital_project.dart';
 import '../../models/department_code.dart';
-import '../../helpers/widgets/my_image_attachments.dart';
 import 'package:flutter_intro/flutter_intro.dart';
 
 import '../PDFViewerScreen.dart';
@@ -40,7 +37,20 @@ class _ContengencyBudgetState extends State<ContengencyBudget> {
   String toDepartment = "";
   bool loading = false;
   List<dynamic> documents = [];
+  List<TextEditingController> controllers = [];
 
+  void initState() {
+    super.initState();
+    // Add initial controller
+    controllers.add(TextEditingController());
+  }
+
+  @override
+  void dispose() {
+    // Dispose all controllers
+    controllers.forEach((controller) => controller.dispose());
+    super.dispose();
+  }
   final transactions = [
     {
       "fromCode": "",
@@ -141,16 +151,50 @@ class _ContengencyBudgetState extends State<ContengencyBudget> {
     }
   }
 
+  void displayProportionalWidthMessage(BuildContext context, String message) {
+    // Calculate the width based on the length of the message
+    double screenWidth = MediaQuery.of(context).size.width;
+    double proportionalWidth = screenWidth * 0.8; // Adjust the factor as needed
+
+    // Display a SnackBar at the bottom of the screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          width: proportionalWidth,
+          child: Text(message),
+        ),
+        duration: Duration(seconds: 2), // Adjust the duration as needed
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  bool checksteptwo() {
+    final value = transactions.any((e) =>
+    e["fromCode"] == "" ||
+        e["toCode"] == "" ||
+        e["reason"] == "" ||
+        e["amount"] == 0.0);
+    return !value;
+  }
+
   bool validateSteps(int curent) {
     switch (curent) {
       case 0:
-        return true;
-      case 1:
-        if (fromDepartment.isNotEmpty && toDepartment.isNotEmpty) {
-          return true;
-        } else {
+        if ( toDepartment.isNotEmpty) {
           return true;
         }
+        displayProportionalWidthMessage(context,
+            "ወደ የመንግስት መ/ቤት / ፕሮግራም / የሥራ ክፍል መምረጥ አለቦት።");
+        return false;
+      case 1:
+        if (checksteptwo()) {
+          return true;
+        }
+        displayProportionalWidthMessage(
+            context, "አንዳንድ መረጃ ባዶ ናቸው እባክዎ አንዱን ይምረጡ");
+
+        return false;
 
       default:
         {
@@ -299,7 +343,7 @@ class _ContengencyBudgetState extends State<ContengencyBudget> {
               .toList();
           print(filePaths);
           setState(() {
-            documents[index]['pics'].addAll(filePaths as List<String>);
+            documents[index]['pics'].addAll(filePaths);
           });
         }
       }
@@ -526,114 +570,198 @@ class _ContengencyBudgetState extends State<ContengencyBudget> {
                     }
                   },
                   content: Column(
-                    children: <Widget>[
-                      DropDownOption(
-                        setSelectedOption: setToDepartment,
-                        selectedOption: toDepartment,
-                        description: "ወደ የመንግስት መ/ቤት / የሥራ ክፍል",
-                        fetchFunction: (String filter) async {
-                          const secureStorage = FlutterSecureStorage();
-                          final token = await secureStorage.read(key: "token");
-                          final headers = {
-                            "Content-Type": "application/json",
-                            'Authorization': 'Bearer $token',
-                          };                              final user =
-                          await secureStorage.read(key: "user");
-                          final dep = json.decode(user!)["DepartmentID"];
-                          final appConfig =
-                              AppConfigProvider.of(context)?.appConfig;
-                          final url = Uri.parse(
-                              '${appConfig?.apiBaseUrl}/department/${dep}');
-                          final response = await http.get(
-                            url,
-                            headers: headers,
-                          );
-                          var data = json.decode(response.body);
-                          var models = BudgetHierarchy.fromJsonList(data);
-                          return getAllData(models)
-                              .map((e) => "${e['id']}: ${e['name']}")
-                              .toList();
-                        },
+                    children: [
+                      SizedBox(
+                        height: 100,
+                        child: Text(
+                          toDepartment,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20),
+                        ),
                       ),
+                      Expanded(
+                        child: TreeViewComponent(
+                          type: 'recurrent',
 
+                          choiceSetter: setToDepartment,
+                          selectedOption: selectedOption,
+                          choices: toDepartment,
+                          description:
+                          "ወደ የመንግስት መ/ቤት / ፕሮግራም / የሥራ ክፍል",
+                          fetchFunction: () async {
+                            const secureStorage =
+                            FlutterSecureStorage();
+                            final token = await secureStorage.read(
+                                key: "token");
+                            final headers = {
+                              "Content-Type": "application/json",
+                              'Authorization': 'Bearer $token',
+                            };
+                            final user = await secureStorage.read(
+                                key: "user");
+                            final dep =
+                            json.decode(user!)["DepartmentID"];
+
+                            final appConfig =
+                                AppConfigProvider.of(context)
+                                    ?.appConfig;
+                            final url = Uri.parse(
+                                '${appConfig?.apiBaseUrl}/department/$dep');
+                            final response = await http.get(
+                              url,
+                              headers: headers,
+                            );
+                            var data = json.decode(response.body);
+                            var models =
+                            BudgetHierarchy.fromJsonList(data);
+                            return models;
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 Step2Widget(
                   formKey: _formKeyStep2,
-                  content: Expanded(
-                    child: SizedBox(
-                      child: ListView.builder(
-                          physics: ClampingScrollPhysics(),
-                          itemCount: transactions.length,
-                          itemBuilder: (context, index) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                DropDownOption(
-                                  setSelectedOption: (str) =>
-                                      setToCode(str, index),
-                                  selectedOption:
-                                  transactions[index]["toCode"] as String,
-                                  description: "To Code",
-                                  fetchFunction: (String filter) async {
-                                    final appConfig =
-                                        AppConfigProvider.of(context)
-                                            ?.appConfig;
-                                    const secureStorage =
-                                    FlutterSecureStorage();
-                                    final token =
-                                    await secureStorage.read(key: "token");
-                                    final headers = {
-                                      "Content-Type": "application/json",
-                                      'Authorization': 'Bearer $token',
-                                    };
-                                    print(
-                                        '${appConfig?.apiBaseUrl}/budgetcode');
-                                    final url = Uri.parse(
-                                        '${appConfig?.apiBaseUrl}/budgetcode');
-                                    final response = await http.get(
-                                      url,
-                                      headers: headers,
-                                    );
-                                    var data = json.decode(response.body);
-                                    var models = BudgetCode.fromJsonList(data);
-                                    return models
-                                        .map((e) => "${e.id}: ${e.description}")
-                                        .toList();
-                                  },
-                                ),
-                                TextFormField(
-                                  initialValue:
-                                  transactions[index]["amount"].toString(),
+                  content: GridView.builder(
+                    shrinkWrap: true,
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 350,
+                        crossAxisSpacing: 5.0,
+                        mainAxisSpacing: 5.0,
+                        mainAxisExtent: 340),
+                    itemCount: transactions.length,
+                    itemBuilder: (context, index) {
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              DropDownOption(
+                                setSelectedOption: (str) =>
+                                    setFromCode(str, index),
+                                selectedOption:
+                                transactions[index]["fromCode"] as String,
+                                description: "ከ በጀት ኮድ",
+                                fetchFunction: (String filter) async {
+                                  final appConfig =
+                                      AppConfigProvider.of(context)?.appConfig;
+                                  const secureStorage = FlutterSecureStorage();
+                                  final token =
+                                  await secureStorage.read(key: "token");
+                                  final headers = {
+                                    "Content-Type": "application/json",
+                                    'Authorization': 'Bearer $token',
+                                  };
+                                  print('${appConfig?.apiBaseUrl}/budgetcode');
+                                  final url = Uri.parse(
+                                      '${appConfig?.apiBaseUrl}/budgetcode');
+                                  final response = await http.get(
+                                    url,
+                                    headers: headers,
+                                  );
+                                  var data = json.decode(response.body);
+                                  var models = BudgetCode.fromJsonList(data);
+                                  return models
+                                      .map((e) => "${e.id}: ${e.description}")
+                                      .toList();
+                                },
+                              ),
+                              DropDownOption(
+                                setSelectedOption: (str) =>
+                                    setToCode(str, index),
+                                selectedOption:
+                                transactions[index]["toCode"] as String,
+                                description: "ወደ በጀት ኮድ",
+                                fetchFunction: (String filter) async {
+                                  final appConfig =
+                                      AppConfigProvider.of(context)?.appConfig;
+                                  const secureStorage = FlutterSecureStorage();
+                                  final token =
+                                  await secureStorage.read(key: "token");
+                                  final headers = {
+                                    "Content-Type": "application/json",
+                                    'Authorization': 'Bearer $token',
+                                  };
+                                  print('${appConfig?.apiBaseUrl}/budgetcode');
+                                  final url = Uri.parse(
+                                      '${appConfig?.apiBaseUrl}/budgetcode');
+                                  final response = await http.get(
+                                    url,
+                                    headers: headers,
+                                  );
+                                  var data = json.decode(response.body);
+                                  var models = BudgetCode.fromJsonList(data);
+                                  return models
+                                      .map((e) => "${e.id}: ${e.description}")
+                                      .toList();
+                                },
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                                child: TextField(
+                                  keyboardType: TextInputType.numberWithOptions(
+                                      decimal: true),
+                                  // Enable decimal input
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(
+                                        RegExp(r'^\d+\.?\d{0,2}')),
+                                    // Allow digits and up to 2 decimal places
+                                  ],
+                                  controller: controllers[index],
                                   onChanged: (val) =>
                                       setAmount(double.parse(val), index),
-                                  keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Birr (Amount)',
-                                    hintText: 'Enter the amount in Birr',
+                                  decoration: InputDecoration(
+                                    fillColor: Colors.white,
+                                    filled: true,
+                                    contentPadding: const EdgeInsets.only(
+                                        right: 10, left: 10),
+                                    border: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: Colors.black, width: 1.0),
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(10.0),
+                                      ),
+                                    ),
+                                    focusedBorder: const OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: Colors.black, width: 1.0),
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(10.0),
+                                      ),
+                                    ),
+                                    enabledBorder: const OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: Colors.black, width: 1.0),
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(10.0),
+                                      ),
+                                    ),
+                                    errorBorder: OutlineInputBorder(
+                                        borderSide: const BorderSide(
+                                            width: 1, color: Colors.red),
+                                        borderRadius: BorderRadius.circular(10)),
+                                    labelText: 'ብር (መጠን)',
+                                    hintText: 'የ ገንዘብ መጠን ያስገቡ።',
                                   ),
-                                  validator: (value) {
-                                    if (value!.isEmpty) {
-                                      return 'Please enter the amount in Birr';
-                                    }
-                                    // You can add additional validation here if needed.
-                                    return null;
-                                  },
                                 ),
-                                DropdownOrInputField(
-                                  index: index,
-                                  setReason: setReason,
-                                  initialvalue:
-                                  transactions[index]["reason"].toString(),
-                                ),
-                                Row(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    if (index == transactions.length - 1)
-                                      ElevatedButton(
-                                          onPressed: () {
+                              ),
+                              DropdownOrInputField(
+                                index: index,
+                                setReason: setReason,
+                                initialvalue:
+                                transactions[index]["reason"].toString(),
+                              ),
+                              Row(
+                                mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                                children: [
+                                  if (index == transactions.length - 1 && (index != 6))
+                                    ElevatedButton(
+                                        onPressed: () {
+                                          if(transactions.length < 7 ) {
                                             setState(() {
                                               transactions.add({
                                                 "fromCode": "",
@@ -641,22 +769,46 @@ class _ContengencyBudgetState extends State<ContengencyBudget> {
                                                 "reason": "",
                                                 "amount": 0.0,
                                               });
+                                              controllers
+                                                  .add(TextEditingController());
                                             });
-                                          },
-                                          child: const Icon(Icons.add)),
-                                    ElevatedButton(
-                                        onPressed: () => {
-                                          setState(() {
-                                            transactions.removeAt(index);
-                                          })
+                                          }
                                         },
-                                        child: const Icon(Icons.delete)),
-                                  ],
-                                ),
-                              ],
-                            );
-                          }),
-                    ),
+                                        style: ElevatedButton.styleFrom(
+                                          shape: CircleBorder(),
+                                          backgroundColor: Colors.green,
+                                          padding: EdgeInsets.all(10),
+                                        ),
+                                        child: const Icon(
+                                          Icons.add,
+                                          color: Colors.white,
+                                        )),
+                                  ElevatedButton(
+                                    onPressed: () => {
+                                      setAmount(0.0, index),
+                                      setState(() {
+                                        transactions.removeAt(index);
+                                        controllers.removeAt(index);
+                                      })
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      shape: CircleBorder(),
+                                      backgroundColor: Colors.red,
+                                      padding: EdgeInsets.all(10),
+                                    ),
+                                    child: const Icon(
+                                      Icons.delete,
+                                      color: Colors.white,
+                                      size: 25,
+                                    ),
+                                  )
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   onNext: () {
                     if (validateSteps(_currentPage)) {
@@ -672,8 +824,7 @@ class _ContengencyBudgetState extends State<ContengencyBudget> {
                       curve: Curves.easeInOut,
                     );
                   },
-                ),
-                // Step 3
+                ),                // Step 3
                 Step3Widget(
                   formKey: _formKeyStep3,
                   content: Container(
@@ -720,6 +871,7 @@ class _ContengencyBudgetState extends State<ContengencyBudget> {
   }
 }
 
+
 class Step1Widget extends StatelessWidget {
   final VoidCallback onNext;
   final Widget content;
@@ -739,16 +891,18 @@ class Step1Widget extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text('Step 1'),
-            content,
+            const Text('ከፈል 1'),
+            Expanded(child: content),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 ElevatedButton(
                   onPressed: onNext,
-                  child: const Text('ቀጥል'),
+                  child: const Text(
+                    'ቀጥል',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
@@ -781,18 +935,24 @@ class Step2Widget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Step 2'),
-            content,
+            const Text('ክፈል 2'),
+            Expanded(child: content),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 ElevatedButton(
                   onPressed: onPrevious,
-                  child: const Text('ቀዳሚ'),
+                  child: const Text(
+                    'ቀዳሚ',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: onNext,
-                  child: const Text('ቀጥል'),
+                  child: const Text(
+                    'ቀጥል',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
@@ -824,18 +984,24 @@ class Step3Widget extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            const Text('Step 3'),
+            const Text('ክፍል 3'),
             Expanded(child: content),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 ElevatedButton(
                   onPressed: onPrevious,
-                  child: const Text('ቀዳሚ'),
+                  child: const Text(
+                    'ቀዳሚ',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: onNext,
-                  child: const Text('ይመልከቱ'),
+                  child: const Text(
+                    'ይመልከቱ',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),

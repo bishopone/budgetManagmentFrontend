@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../../config.dart';
-import './data.dart';
 
 class AnalysisScreen extends StatefulWidget {
   AnalysisScreen({Key? key}) : super(key: key);
@@ -58,7 +57,7 @@ class _AnalysisScreenState extends State<AnalysisScreen>
 
     for (var item in inputList) {
       if (item is Map<dynamic, dynamic>) {
-        result.add(item as Map<dynamic, dynamic>);
+        result.add(item);
       } else {
         // Handle the case where the element is not a Map
         // For example, you can skip it or provide a default value

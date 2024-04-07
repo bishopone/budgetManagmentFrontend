@@ -7,7 +7,6 @@ import 'package:budgetmanager/helpers/widgets/my_text_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 
 import 'package:budgetmanager/helpers/theme/app_theme.dart';
 
@@ -38,7 +37,7 @@ class _HealthProfileScreenState extends State<HealthProfileScreen> {
       if (user == null) {
         return null; // Handle the error as needed
       }
-      final decodeduser = jsonDecode(user!);
+      final decodeduser = jsonDecode(user);
       print(decodeduser['ProfilePictureLink']);
       return decodeduser;
     } catch (e) {

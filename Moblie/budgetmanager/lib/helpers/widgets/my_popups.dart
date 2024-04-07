@@ -66,7 +66,7 @@ class ErrorAlertDialog extends StatelessWidget {
             if (onRetry != null)
               ElevatedButton(
                 onPressed: onRetry,
-                child: Text('Try Again'),
+                child: Text('Try Again',style: TextStyle(color: Colors.white),),
               ),
           ],
         ),

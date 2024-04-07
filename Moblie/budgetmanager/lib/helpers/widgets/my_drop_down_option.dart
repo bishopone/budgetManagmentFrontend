@@ -21,10 +21,36 @@ class DropDownOption extends StatelessWidget {
       child: Column(
         children: [
           DropdownSearch<String>(
+
             onChanged: (x) => setSelectedOption(x!),
             selectedItem: selectedOption,
             dropdownDecoratorProps: DropDownDecoratorProps(
+
                 dropdownSearchDecoration: InputDecoration(
+                      fillColor: Colors. white,
+                      filled: true,
+                      contentPadding: const EdgeInsets.only(right: 10,left: 10),
+                      border:  OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black, width: 1.0),
+                        borderRadius: BorderRadius.all(Radius.circular(10.0),),
+                      ),
+                      focusedBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(
+                            color: Colors.black, width: 1.0        ),
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(10.0),
+                        ),
+                      ) ,
+                      enabledBorder:  const OutlineInputBorder(
+                        borderSide: BorderSide(
+                            color: Colors.black, width: 1.0        ),
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(10.0),
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(width: 1,color: Colors.red),
+                          borderRadius: BorderRadius.circular(10)),
                     label: Text(
               description,
               style: const TextStyle(color: Colors.black),
