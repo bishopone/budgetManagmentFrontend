@@ -93,7 +93,7 @@ BEGIN
             VALUE "FileDescription", "budgetmanager" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "budgetmanager" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2023 com.example. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2024 com.example. All rights reserved." "\0"
             VALUE "OriginalFilename", "budgetmanager.exe" "\0"
             VALUE "ProductName", "budgetmanager" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
@@ -116,8 +116,6 @@ END
 // Generated from the TEXTINCLUDE 3 resource.
 //
 
-// And verify signature using DSA public key:
-DSAPub      DSAPEM      "../../dsa_pub.pem"
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED

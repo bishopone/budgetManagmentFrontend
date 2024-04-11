@@ -10,14 +10,20 @@ import TextField from "@mui/material/TextField";
 import MDBox from "components/MDBox";
 import api from "api";
 import InputAdornment from "@mui/material/InputAdornment";
-import { useCreateDepartment, useEditDepartment } from "./api.js";
+import { useCreateDepartment, useEditDepartment, useCreateCapitalDepartment } from "./api.js";
 
-export default function MaxWidthDialog({ isopen, handleClose, selectedDepartment, isEdit }) {
+export default function MaxWidthDialog({
+  isopen,
+  handleClose,
+  selectedDepartment,
+  isEdit,
+  isCapital,
+}) {
   const [title, setTitle] = useState(selectedDepartment?.Name ? selectedDepartment.Name : "");
   const [id, setId] = useState(selectedDepartment?.ID ? selectedDepartment.ID : "");
   const createDepartment = useCreateDepartment();
   const editDepartment = useEditDepartment();
-  console.log("selectedDepartmentselectedDepartment", selectedDepartment);
+  const createCapitalDepartment = useCreateCapitalDepartment();
   const handleTitleChange = (event) => {
     setTitle(event.target.value);
   };
@@ -32,18 +38,25 @@ export default function MaxWidthDialog({ isopen, handleClose, selectedDepartment
     if (selectedDepartment?.ID && !isFullyDivisibleBy100(parseInt(selectedDepartment.ID))) {
       finalId = `${selectedDepartment.ID}${id}`;
     }
-
-    if (isEdit) {
-      editDepartment.mutate({
-        id: parseInt(selectedDepartment.ID),
-        title: title,
-      });
-    } else {
-      createDepartment.mutate({
+    if (isCapital) {
+      createCapitalDepartment.mutate({
         id: finalId,
         title: title,
         selectedDepartment: selectedDepartment?.ID ? selectedDepartment.ID : null,
       });
+    } else {
+      if (isEdit) {
+        editDepartment.mutate({
+          id: parseInt(selectedDepartment.ID),
+          title: title,
+        });
+      } else {
+        createDepartment.mutate({
+          id: finalId,
+          title: title,
+          selectedDepartment: selectedDepartment?.ID ? selectedDepartment.ID : null,
+        });
+      }
     }
     setTitle("");
     setId("");

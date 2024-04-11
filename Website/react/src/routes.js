@@ -52,6 +52,7 @@ import RequiredDocuments from "layouts/required documents";
 import Profile from "layouts/profile";
 import UserForm from "layouts/users/components/userform";
 import SignIn from "layouts/authentication/sign-in";
+import AcceptReasons from "layouts/acceptreasons";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
@@ -66,6 +67,15 @@ const routes = [
     icon: <Icon fontSize="small">dashboard</Icon>,
     route: "/dashboard",
     component: <Dashboard />,
+    permission: "AccessDashboard",
+  },
+  {
+    type: "collapse",
+    name: "Accept Reasons",
+    key: "acceptreason",
+    icon: <Icon fontSize="small">list</Icon>,
+    route: "/acceptreason",
+    component: <AcceptReasons />,
     permission: "AccessDashboard",
   },
   {
@@ -197,6 +207,7 @@ const routes = [
     component: <RequiredDocuments />,
     permission: "requiredDocuments",
   },
+
   {
     type: "collapse",
     name: "Profile",

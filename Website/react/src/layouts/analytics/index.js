@@ -54,6 +54,7 @@ function Analytics() {
   };
 
   const handleHistoryOpen = (id) => {
+    console.log("handleHistoryOpen", id);
     setRequestid(id);
     setIsOpen(true);
   };
