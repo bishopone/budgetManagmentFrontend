@@ -1,0 +1,95 @@
+{
+  "name": "material-dashboard-2-react",
+  "version": "2.2.0",
+  "private": true,
+  "author": "Abeselom Solomon",
+  "description": "React version of Material Dashboard 2 by Creative Tim",
+  "dependencies": {
+    "@emotion/cache": "11.10.8",
+    "@emotion/react": "11.10.8",
+    "@emotion/styled": "11.10.8",
+    "@mui/icons-material": "5.11.16",
+    "@mui/material": "5.12.3",
+    "@mui/styles": "^5.14.7",
+    "@mui/x-data-grid": "^6.19.8",
+    "@mui/x-tree-view": "^6.17.0",
+    "@pdfme/common": "^2.2.1",
+    "@pdfme/generator": "^2.2.1",
+    "@pdfme/ui": "^2.2.1",
+    "@react-pdf-viewer/core": "^3.12.0",
+    "@react-pdf/renderer": "^3.3.8",
+    "axios": "^1.6.8",
+    "chart.js": "4.3.0",
+    "chroma-js": "2.4.2",
+    "firebase": "^10.5.0",
+    "html-to-image": "^1.11.11",
+    "html2canvas": "^1.4.1",
+    "i18next": "^23.7.11",
+    "immutability-helper": "^3.1.1",
+    "jspdf": "^2.5.1",
+    "prop-types": "15.8.1",
+    "qrcode": "^1.5.3",
+    "qrcode.react": "^3.1.0",
+    "react": "^18.2.0",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-chartjs-2": "5.2.0",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1",
+    "react-dom": "18.2.0",
+    "react-dropzone": "^14.2.3",
+    "react-flow-renderer": "^10.3.17",
+    "react-github-btn": "1.4.0",
+    "react-i18next": "^14.0.0",
+    "react-image-crop": "9.0.4",
+    "react-lazy-load-image-component": "^1.6.0",
+    "react-pdf": "^7.5.1",
+    "react-query": "^3.39.3",
+    "react-router-dom": "6.11.0",
+    "react-scripts": "5.0.1",
+    "react-table": "7.8.0",
+    "react-to-print": "^2.15.1",
+    "react-zoom-pan-pinch": "^3.1.0",
+    "reactflow": "^11.10.4",
+    "stylis": "4.1.4",
+    "yup": "1.1.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "install:clean": "rm -rf node_modules/ && rm -rf package-lock.json && npm install && npm start"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "eslint": "8.39.0",
+    "eslint-config-prettier": "8.8.0",
+    "eslint-plugin-import": "2.27.5",
+    "eslint-plugin-jsx-a11y": "6.7.1",
+    "eslint-plugin-prettier": "4.2.1",
+    "eslint-plugin-react": "7.32.2",
+    "eslint-plugin-react-hooks": "4.6.0",
+    "prettier": "2.8.8"
+  },
+  "overrides": {
+    "svgo": "3.0.2"
+  }
+}
